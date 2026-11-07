@@ -73,7 +73,11 @@ def main():
     except Exception: season={}
     if not isinstance(season,dict) or not season.get('id'):
         seasons=rows(get(f'/leagues/{lid}/seasons/'))
-        if not seasons: raise RuntimeError('API nie zwróciło sezonów Ekstraklasy.')
+    if not seasons:
+    raise RuntimeError(
+        f'Brak sezonów. Liga ID: {lid}, '
+        f'odpowiedź API: {str(get(f"/leagues/{lid}/seasons/"))[:800]}'
+    )
         seasons.sort(key=lambda x:(bool(x.get('is_current')),int(x.get('year') or 0)),reverse=True); season=seasons[0]
     sid=season.get('id')
     events=paged('/events/',{'league_id':lid,'season_id':sid})
