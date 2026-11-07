@@ -8,3 +8,16 @@ function table(rows){content.replaceChildren(el('h2','section-title','Tabela lig
 function render(){if(!data?.ok){content.replaceChildren(el('p','empty','Brak danych. Administrator musi dodać klucz API Bzzoiro i uruchomić aktualizację w GitHub Actions.'));return}seasonEl.textContent=`${val(data.league,'Ekstraklasa')} · ${val(data.season,'bieżący sezon')}`;if(data.updated_at)updatedEl.textContent=`Ostatnia aktualizacja: ${dateText(data.updated_at)} · Źródło: Bzzoiro Sports Data`;if(tab==='upcoming')matches(data.upcoming,'Najbliższe mecze',false);if(tab==='results')matches(data.results,'Ostatnie wyniki',true);if(tab==='table')table(data.standings)}
 async function load(force=false){refreshBtn.disabled=true;try{const r=await fetch('data.json'+(force?'?t='+Date.now():''),{cache:force?'no-store':'default'});if(!r.ok)throw Error('HTTP '+r.status);const d=await r.json();if(!d.ok)throw Error('Brak danych');data=d;try{localStorage.setItem('ekstraklasa-cache',JSON.stringify(d))}catch{}render()}catch(e){if(!data){try{data=JSON.parse(localStorage.getItem('ekstraklasa-cache'))}catch{}}if(data?.ok){render();content.append(el('p','notice','Nie udało się pobrać najnowszych danych. Wyświetlam ostatnio zapisane.'))}else{content.replaceChildren(el('p','error','Nie można pobrać danych. Sprawdź połączenie lub konfigurację API w GitHub.'));seasonEl.textContent='Dane chwilowo niedostępne'}}finally{refreshBtn.disabled=false}}
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{tab=b.dataset.tab;document.querySelectorAll('.tab').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-selected',x===b?'true':'false')});render()}));refreshBtn.addEventListener('click',()=>load(true));if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));load();
+
+// Zapamiętanie motywu na tym urządzeniu.
+const themeBtn=document.querySelector('#themeToggle');
+function applyTheme(mode){
+ const dark=mode==='dark';document.documentElement.dataset.theme=dark?'dark':'light';
+ themeBtn.textContent=dark?'☀ Jasny':'☾ Ciemny';themeBtn.setAttribute('aria-pressed',String(dark));
+ themeBtn.setAttribute('aria-label',dark?'Włącz jasny motyw':'Włącz ciemny motyw');
+ document.querySelector('meta[name="theme-color"]')?.setAttribute('content',dark?'#101a25':'#12324c');
+ try{localStorage.setItem('ekstraklasa-theme',mode)}catch{}
+}
+let savedTheme='light';try{savedTheme=localStorage.getItem('ekstraklasa-theme')||'light'}catch{}
+applyTheme(savedTheme);
+themeBtn.addEventListener('click',()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));
