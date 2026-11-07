@@ -104,8 +104,8 @@ def match_datetime(value):
         return None
 
 
-def next_three_rounds(matches):
-    """Return fixtures from the next three matchdays, not just today."""
+def next_five_rounds(matches):
+    """Return fixtures from the next five matchdays, not just today."""
     now = datetime.now(timezone.utc)
     finished = {'finished', 'ft', 'full_time', 'completed', 'ended',
                 'cancelled', 'canceled', 'postponed', 'abandoned'}
@@ -142,18 +142,18 @@ def next_three_rounds(matches):
             return int(match.group()) if match else None
         return None
 
-    # Select the first three rounds in chronological order, including all
+    # Select the first five rounds in chronological order, including all
     # remaining fixtures from the current round.
     rounds = []
     for m in upcoming:
         n = round_number(m)
         if n is not None and n not in rounds:
             rounds.append(n)
-        if len(rounds) == 3:
+        if len(rounds) == 5:
             break
     if rounds and all(round_number(m) is not None for m in upcoming):
         return [m for m in upcoming if round_number(m) in rounds]
-    return upcoming[:27]
+    return upcoming[:45]
 
 
 def main():
@@ -240,7 +240,7 @@ def main():
         'source': 'Bzzoiro Sports Data',
         'league': first(league, 'name', 'league_name') or 'Ekstraklasa',
         'season': first(season, 'name') or str(season.get('year') or 'Bieżący sezon'),
-        'upcoming': next_three_rounds(matches),
+        'upcoming': next_five_rounds(matches),
         'results': [m for m in matches if m['status'] == 'finished'][::-1],
         'standings': table
     }
