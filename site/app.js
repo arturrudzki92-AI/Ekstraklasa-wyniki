@@ -21,3 +21,15 @@ function applyTheme(mode){
 let savedTheme='light';try{savedTheme=localStorage.getItem('ekstraklasa-theme')||'light'}catch{}
 applyTheme(savedTheme);
 themeBtn.addEventListener('click',()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));
+
+// Rozmiar czcionki: duża (domyślna), większa, największa.
+const fontButtons=[...document.querySelectorAll('.font-choice')];
+function applyFontSize(size){
+ const chosen=['base','larger','largest'].includes(size)?size:'base';
+ document.documentElement.dataset.font=chosen;
+ fontButtons.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.font===chosen)));
+ try{localStorage.setItem('ekstraklasa-font-size',chosen)}catch{}
+}
+let savedFont='base';try{savedFont=localStorage.getItem('ekstraklasa-font-size')||'base'}catch{}
+applyFontSize(savedFont);
+fontButtons.forEach(b=>b.addEventListener('click',()=>applyFontSize(b.dataset.font)));

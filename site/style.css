@@ -8,3 +8,26 @@ header{background:var(--navy)}.head{align-items:flex-start;flex-wrap:wrap}.head-
 .tabs{background:var(--tabbar);grid-template-columns:1.2fr .95fr .8fr}.tab{background:var(--surface);color:var(--ink);border-color:var(--line);font-size:clamp(18px,4.7vw,23px);min-height:70px}.tab.active{background:var(--navy2);color:#fff;border-color:var(--navy2)}
 .section-title{font-size:clamp(28px,6.8vw,34px)}.match,.table-wrap,.empty,.notice,.error{background:var(--surface);border-color:var(--line)}.match{padding:18px;margin-bottom:15px}.date{color:var(--muted);font-size:clamp(19px,4.8vw,23px)}.team{font-size:clamp(23px,5.8vw,30px);line-height:1.2}.score{background:var(--score-bg);color:var(--score-ink);font-size:clamp(27px,6.4vw,34px)}.status{font-size:19px;color:var(--muted)}.notice,.empty{color:var(--ink);font-size:21px}table{font-size:22px}th{background:var(--subtle);color:var(--ink);font-size:19px}th,td{border-color:var(--line);padding:15px 10px}td.points{font-size:25px}footer{color:var(--muted);font-size:18px}
 @media(max-width:390px){.head-actions{width:100%;justify-content:flex-start}.theme-toggle,.refresh{font-size:18px}.match{padding:13px}.teams{gap:5px}.team{font-size:clamp(21px,5.6vw,25px)}.score{min-width:67px;padding:8px 4px;font-size:25px}.tab{font-size:17px;padding:8px 3px}}
+
+/* Ekstraklasa 4.0: trzy duże rozmiary tekstu, niezależnie na każdym telefonie */
+:root{--font-mult:1}
+html[data-font="base"]{--font-mult:1}
+html[data-font="larger"]{--font-mult:1.17}
+html[data-font="largest"]{--font-mult:1.34}
+.font-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px;border:1px solid rgba(255,255,255,.65);border-radius:14px}
+.font-label{font-weight:800;font-size:18px;padding:0 4px}
+.font-choice{border:2px solid #fff;border-radius:10px;background:transparent;color:#fff;min-height:48px;padding:6px 9px;font-size:17px;font-weight:800;cursor:pointer}
+.font-choice[aria-pressed="true"]{background:#fff;color:#10243a}
+.section-title{font-size:calc(28px * var(--font-mult))}
+.date{font-size:calc(20px * var(--font-mult))}
+.team{font-size:calc(24px * var(--font-mult));overflow-wrap:anywhere}
+.score{font-size:calc(29px * var(--font-mult));min-width:calc(80px * var(--font-mult))}
+.status{font-size:calc(19px * var(--font-mult))}
+.tab{font-size:calc(18px * var(--font-mult));overflow-wrap:anywhere}
+.empty,.error,.notice{font-size:calc(20px * var(--font-mult))}
+table{font-size:calc(21px * var(--font-mult))}
+th{font-size:calc(18px * var(--font-mult))}
+td.points{font-size:calc(24px * var(--font-mult))}
+#season{font-size:calc(19px * var(--font-mult))}
+#updated,footer{font-size:calc(17px * var(--font-mult))}
+@media(max-width:430px){.head-actions{width:100%;justify-content:flex-start}.font-controls{width:100%}.font-choice{flex:1;min-width:0;padding:6px 3px;font-size:15px}.teams{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:4px}.match{padding:12px}.score{min-width:0;padding:8px 4px}.tab{padding:8px 2px}}
