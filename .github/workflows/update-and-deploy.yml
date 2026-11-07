@@ -1,1 +1,50 @@
+name: Aktualizacja Ekstraklasy i publikacja
 
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 * * * *'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  update-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Pobierz repozytorium
+        uses: actions/checkout@v4
+
+      - name: Przygotuj Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Zainstaluj biblioteki
+        run: pip install -r requirements.txt
+
+      - name: Pobierz dane meczów
+        env:
+          BSD_API_KEY: ${{ secrets.BSD_API_KEY }}
+        run: python fetch_data.py
+
+      - name: Przygotuj GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Prześlij pliki strony
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Opublikuj aplikację
+        id: deployment
+        uses: actions/deploy-pages@v4
