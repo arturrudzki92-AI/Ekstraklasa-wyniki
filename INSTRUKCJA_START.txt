@@ -1,0 +1,13 @@
+EKSTRAKLASA 3.0 - INSTRUKCJA NA TELEFON
+
+UWAGA: NIE USUWAJ REPOZYTORIUM! Utracisz ustawienia Pages i sekret BSD_API_KEY.
+
+Wypakuj ZIP. W repozytorium GitHub w glownym katalogu maja byc: fetch_data.py, requirements.txt, README_PL.md oraz katalogi site i .github.
+
+W folderze site maja byc: index.html, style.css, app.js, sw.js, manifest.webmanifest, icon.svg, data.json.
+
+Najprosciej: podmien pliki w istniejacych folderach (nie tworz site/site). Jesli tworzysz nowe repozytorium, dodaj ponownie sekret BSD_API_KEY w Settings > Secrets and variables > Actions oraz wlacz Pages > Source: GitHub Actions.
+
+Uruchom Actions > Aktualizuj dane Ekstraklasy i publikuj PWA > Run workflow. Sprawdz zielony wynik i adres GitHub Pages.
+
+Przycisk Odswiez pobiera aktualny plik data.json z GitHub Pages; nie uruchamia API. Dane API aktualizuje GitHub Actions co godzine.
