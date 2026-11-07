@@ -31,3 +31,12 @@ td.points{font-size:calc(24px * var(--font-mult))}
 #season{font-size:calc(19px * var(--font-mult))}
 #updated,footer{font-size:calc(17px * var(--font-mult))}
 @media(max-width:430px){.head-actions{width:100%;justify-content:flex-start}.font-controls{width:100%}.font-choice{flex:1;min-width:0;padding:6px 3px;font-size:15px}.teams{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:4px}.match{padding:12px}.score{min-width:0;padding:8px 4px}.tab{padding:8px 2px}}
+
+/* V4.1: jedna drużyna w wierszu, wynik wyrównany do prawej. */
+.teams{display:flex!important;flex-direction:column;align-items:stretch;gap:0!important}
+.team-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px 0;min-height:64px}
+.team-row+.team-row{border-top:1px solid var(--line)}
+.team-row .team{font-size:calc(24px * var(--font-mult));line-height:1.25;text-align:left;overflow-wrap:normal;word-break:normal;hyphens:auto;min-width:0}
+.team-score{font-size:calc(30px * var(--font-mult));font-weight:900;min-width:1.3em;text-align:right;color:var(--score-ink)}
+.fixture-label{text-align:center;color:var(--muted);font-size:calc(17px * var(--font-mult));font-weight:800;padding:6px 0}
+@media(max-width:390px){.team-row .team{font-size:calc(23px * var(--font-mult))}}
