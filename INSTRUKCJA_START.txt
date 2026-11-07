@@ -1,13 +1,9 @@
-EKSTRAKLASA 3.0 - INSTRUKCJA NA TELEFON
+EKSTRAKLASA 4.0
 
-UWAGA: NIE USUWAJ REPOZYTORIUM! Utracisz ustawienia Pages i sekret BSD_API_KEY.
+Nowosci: 5 kolejnych kolejek, regulacja czcionki (Duza, Wieksza, Najwieksza).
 
-Wypakuj ZIP. W repozytorium GitHub w glownym katalogu maja byc: fetch_data.py, requirements.txt, README_PL.md oraz katalogi site i .github.
+Na GitHubie: przeslij pliki z folderu site do istniejacego folderu site, a fetch_data.py do katalogu glownego. Zatwierdz zmiany. Uruchom Actions -> Aktualizacja Ekstraklasy i publikacja -> Run workflow.
 
-W folderze site maja byc: index.html, style.css, app.js, sw.js, manifest.webmanifest, icon.svg, data.json.
+Nie usuwaj repozytorium ani sekretu BSD_API_KEY.
 
-Najprosciej: podmien pliki w istniejacych folderach (nie tworz site/site). Jesli tworzysz nowe repozytorium, dodaj ponownie sekret BSD_API_KEY w Settings > Secrets and variables > Actions oraz wlacz Pages > Source: GitHub Actions.
-
-Uruchom Actions > Aktualizuj dane Ekstraklasy i publikuj PWA > Run workflow. Sprawdz zielony wynik i adres GitHub Pages.
-
-Przycisk Odswiez pobiera aktualny plik data.json z GitHub Pages; nie uruchamia API. Dane API aktualizuje GitHub Actions co godzine.
+Uwaga: liczba kolejek zalezy od dostepnosci przyszlych meczow w API.
