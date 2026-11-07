@@ -90,6 +90,72 @@ def score(e, side):
     return None
 
 
+def match_datetime(value):
+    """Parse an API kickoff timestamp as a timezone-aware datetime."""
+    if value is None:
+        return None
+    try:
+        if isinstance(value, (int, float)):
+            return datetime.fromtimestamp(value, tz=timezone.utc)
+        raw = str(value).strip().replace('Z', '+00:00')
+        dt = datetime.fromisoformat(raw)
+        return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+    except (ValueError, TypeError, OverflowError):
+        return None
+
+
+def next_three_rounds(matches):
+    """Return fixtures from the next three matchdays, not just today."""
+    now = datetime.now(timezone.utc)
+    finished = {'finished', 'ft', 'full_time', 'completed', 'ended',
+                'cancelled', 'canceled', 'postponed', 'abandoned'}
+    live = {'live', 'in_progress', 'playing', '1h', '2h', 'ht'}
+    scheduled = {'scheduled', 'upcoming', 'not_started', 'notstarted',
+                 'ns', 'pending', 'fixture', 'tbd', 'timed', 'planned'}
+    upcoming = []
+    for m in matches:
+        status = str(m.get('status') or '').lower().strip()
+        dt = match_datetime(m.get('date'))
+        if status in finished:
+            continue
+        # Include future matches even when the API calls them "scheduled".
+        # Also include scheduled matches whose kickoff is not yet published.
+        if status in live or (dt is not None and dt >= now) or (dt is None and status in scheduled):
+            upcoming.append(m)
+
+    upcoming.sort(key=lambda m: (match_datetime(m.get('date')) is None,
+                                 match_datetime(m.get('date')) or now))
+    if not upcoming:
+        from collections import Counter
+        statuses = Counter(m.get('status') for m in matches)
+        print('DIAGNOSTYKA: brak przyszłych meczów; statusy API:', dict(statuses),
+              '; przykładowe daty:', [m.get('date') for m in matches[:5]])
+        return []
+
+    def round_number(m):
+        r = m.get('round')
+        if isinstance(r, int):
+            return r
+        if isinstance(r, str):
+            import re
+            match = re.search(r'\d+', r)
+            return int(match.group()) if match else None
+        return None
+
+    # Select the first three rounds in chronological order, including all
+    # remaining fixtures from the current round.
+    rounds = []
+    for m in upcoming:
+        n = round_number(m)
+        if n is not None and n not in rounds:
+            rounds.append(n)
+        if len(rounds) == 3:
+            break
+    if rounds and all(round_number(m) is not None for m in upcoming):
+        return [m for m in upcoming if round_number(m) in rounds]
+    return upcoming[:27]
+
+
 def main():
     if not KEY:
         raise RuntimeError('Brak sekretu BSD_API_KEY w ustawieniach GitHub Actions.')
@@ -141,6 +207,7 @@ def main():
             'round': first(e, 'round', 'matchday', 'round_name')
         })
     matches.sort(key=lambda x: str(x.get('date') or ''))
+    print(f"DIAGNOSTYKA: API zwróciło {len(matches)} meczów")
 
     st = get(f'/leagues/{lid}/standings/', {'season_id': sid})
     table = rows(st)
@@ -173,13 +240,13 @@ def main():
         'source': 'Bzzoiro Sports Data',
         'league': first(league, 'name', 'league_name') or 'Ekstraklasa',
         'season': first(season, 'name') or str(season.get('year') or 'Bieżący sezon'),
-        'upcoming': [m for m in matches if m['status'] in ('upcoming', 'live')],
+        'upcoming': next_three_rounds(matches),
         'results': [m for m in matches if m['status'] == 'finished'][::-1],
         'standings': table
     }
     OUT.parent.mkdir(exist_ok=True)
     OUT.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
-    print(f"OK: {data['league']} / {data['season']}; meczów {len(matches)}, tabela {len(table)}")
+    print(f"OK: {data['league']} / {data['season']}; meczów {len(matches)}, nadchodzących {len(data['upcoming'])}, tabela {len(table)}")
 
 
 if __name__ == '__main__':
