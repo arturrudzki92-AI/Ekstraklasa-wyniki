@@ -1,4 +1,4 @@
-// Ekstraklasa 4.2.4: rozwijane kolejki i delikatne wyróżnienie Górnika Zabrze bez gwiazdek.
+// Ekstraklasa 4.2.6: rozwijane kolejki i delikatne wyróżnienie Górnika Zabrze bez gwiazdek.
 // Dane wciąż pochodzą z tego samego site/data.json. Nie potrzebujemy klucza API w przeglądarce.
 const content = document.querySelector('#content');
 const seasonEl = document.querySelector('#season');
@@ -185,17 +185,7 @@ function makeMatchCard(m, kind = 'upcoming') {
   if (unconfirmed) {
     card.append(el('div', 'pending-label', 'Minęła godzina rozpoczęcia. Czekamy na potwierdzenie wyniku.'));
   }
-  if (kind === 'finished') {
-    const known = {
-      finished: 'Koniec meczu', ft: 'Koniec meczu',
-      full_time: 'Koniec meczu', completed: 'Koniec meczu', ended: 'Koniec meczu',
-      postponed: 'Mecz przełożony', cancelled: 'Mecz odwołany'
-    };
-    const status = known[String(m.status || '').toLowerCase()] || '';
-    const round = roundInfo(m.round);
-    const label = [status, round?.label || ''].filter(Boolean).join(' · ');
-    if (label) card.append(el('div', 'status', label));
-  }
+  // Zakończone mecze: bez zbędnego dopisku statusu i numeru kolejki.
   return card;
 }
 
