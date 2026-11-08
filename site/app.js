@@ -1,4 +1,4 @@
-// Ekstraklasa 4.2.2: rozwijane kolejki i delikatne wyróżnienie Górnika Zabrze bez gwiazdek.
+// Ekstraklasa 4.2.3: rozwijane kolejki i delikatne wyróżnienie Górnika Zabrze bez gwiazdek.
 // Dane wciąż pochodzą z tego samego site/data.json. Nie potrzebujemy klucza API w przeglądarce.
 const content = document.querySelector('#content');
 const seasonEl = document.querySelector('#season');
@@ -57,61 +57,59 @@ function kickoffMillis(m) {
   return Number.isFinite(n) ? n : null;
 }
 
-// Zwracamy osobne grupy nawet wtedy, gdy API każdemu meczowi
-// przypisze ogólną etykietę „Nadchodzące” zamiast numeru kolejki.
+// Oficjalne numery z Bzzoiro mają pierwszeństwo nawet wtedy,
+// gdy pojedynczy mecz nie ma przypisanego numeru.
 function groupUpcomingMatches(list) {
   const matches = [...list].sort((a, b) =>
     (kickoffMillis(a) ?? Infinity) - (kickoffMillis(b) ?? Infinity));
-  const numbered = matches.map(m => roundInfo(m.round));
-
-  // Oficjalne numery z API mają pierwszeństwo. Nie korzystamy z tego
-  // trybu, jeśli choć jednemu spotkaniu brakuje numeru.
-  if (numbered.every(Boolean)) {
-    const groups = new Map();
-    matches.forEach((m, i) => {
-      const info = numbered[i];
-      if (!groups.has(info.key)) groups.set(info.key, { ...info, matches: [] });
-      groups.get(info.key).matches.push(m);
-    });
-    return [...groups.values()].slice(0, 5);
+  const official = new Map();
+  const withoutNumber = [];
+  for (const m of matches) {
+    const info = roundInfo(m.round_number ?? m.round ?? m.round_label);
+    if (!info) {
+      withoutNumber.push(m);
+      continue;
+    }
+    if (!official.has(info.key)) official.set(info.key, { ...info, matches: [] });
+    official.get(info.key).matches.push(m);
   }
 
-  // Awaryjnie dzielimy terminarz na pięć kolejnych bloków meczowych.
-  // W Ekstraklasie jedna kolejka obejmuje zwykle 9 meczów, a drużyna
-  // nie powinna występować dwukrotnie w tej samej kolejce.
-  const groups = [];
+  // Dla meczów bez numeru grupujemy daty, ale NIE nadajemy
+  // im zmyślonego numeru kolejki.
+  const unknownGroups = [];
   let current = null;
   let usedTeams = new Set();
   let lastKickoff = null;
   const DAY = 24 * 60 * 60 * 1000;
-  function startGroup() {
-    current = { key: `dates-${groups.length + 1}`, label: '', matches: [] };
-    groups.push(current);
-    usedTeams = new Set();
-    lastKickoff = null;
-  }
-  for (const m of matches) {
+  for (const m of withoutNumber) {
     const t = kickoffMillis(m);
-    const names = [m.home, m.away]
+    const teams = [m.home, m.away]
       .map(normalizeTeam)
       .filter(n => n && !n.includes('nieznana druzyna'));
-    const teamRepeated = names.some(n => usedTeams.has(n));
+    const repeatsTeam = teams.some(n => usedTeams.has(n));
     const longBreak = lastKickoff !== null && t !== null &&
       t - lastKickoff >= 3.5 * DAY;
-    const noDate = t === null;
-    if (!current || current.matches.length >= 9 || teamRepeated || longBreak ||
-        (noDate && current.matches.some(x => kickoffMillis(x) !== null))) {
-      startGroup();
+    if (!current || current.matches.length >= 9 || repeatsTeam || longBreak ||
+        (t === null && current.matches.some(x => kickoffMillis(x) !== null))) {
+      current = {
+        key: `unknown-${unknownGroups.length + 1}`,
+        label: 'Terminy bez numeru kolejki',
+        matches: []
+      };
+      unknownGroups.push(current);
+      usedTeams = new Set();
+      lastKickoff = null;
     }
     current.matches.push(m);
-    names.forEach(n => usedTeams.add(n));
+    teams.forEach(name => usedTeams.add(name));
     if (t !== null) lastKickoff = t;
   }
-  const visible = groups.slice(0, 5);
-  visible.forEach((g, i) => {
-    g.label = `Kolejka ${i + 1} z ${visible.length}`;
-  });
-  return visible;
+
+  return [...official.values(), ...unknownGroups]
+    .sort((a, b) =>
+      (kickoffMillis(a.matches[0]) ?? Infinity) -
+      (kickoffMillis(b.matches[0]) ?? Infinity))
+    .slice(0, 5);
 }
 
 function roundDates(matches) {
