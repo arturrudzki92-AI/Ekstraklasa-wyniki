@@ -123,34 +123,72 @@ function roundDates(matches) {
   return first === last ? first : `${first} – ${last}`;
 }
 
-function makeMatchCard(m, result) {
+function isLive(m) {
+  return ['live', 'in_progress', 'inprogress', 'playing', '1h', '2h', 'ht',
+    'halftime', 'half_time', 'extra_time', 'et'].includes(String(m.status || '').toLowerCase());
+}
+function isAfterKickoffUnconfirmed(m) {
+  if (isLive(m) || ['finished','ft','full_time','completed','ended',
+    'cancelled','canceled','postponed','abandoned'].includes(String(m.status || '').toLowerCase())) return false;
+  const t = kickoffMillis(m);
+  if (t === null) return false;
+  const elapsed = Date.now() - t;
+  return elapsed >= 60 * 1000 && elapsed <= 4 * 60 * 60 * 1000;
+}
+function uniqueMatches(matches) {
+  const seen = new Set();
+  return matches.filter(m => {
+    const key = m.id != null ? String(m.id) : `${m.home}|${m.away}|${m.date}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+function matchMinute(m) {
+  const raw = m.minute;
+  if (raw === null || raw === undefined) return '';
+  const value = String(raw).trim().replace(/'$/, '');
+  return /^\d{1,3}(\+\d{1,2})?$/.test(value) ? `${value}′` : '';
+}
+function makeMatchCard(m, kind = 'upcoming') {
   const favorite = isGornik(m);
-  const card = el('article', favorite ? 'match favorite-match' : 'match');
+  const isPlaying = kind === 'live';
+  const unconfirmed = kind === 'pending';
+  const cardClasses = ['match'];
+  if (favorite) cardClasses.push('favorite-match');
+  if (isPlaying) cardClasses.push('live-match');
+  if (unconfirmed) cardClasses.push('pending-match');
+  const card = el('article', cardClasses.join(' '));
   const meta = el('div', 'match-meta');
   meta.append(el('div', 'date', dateText(m.date)));
+  if (isPlaying) {
+    const minute = matchMinute(m);
+    const liveBadge = el('span', 'live-badge', minute ? `NA ŻYWO · ${minute}` : 'NA ŻYWO');
+    meta.append(liveBadge);
+  }
   card.append(meta);
-
   const teams = el('div', 'teams');
-  const scored = m.home_score != null || m.away_score != null;
-  for (const [name, score] of [
+  const showScores = kind !== 'upcoming';
+  for (const [name, scoreValue] of [
     [val(m.home, 'Gospodarze'), m.home_score],
     [val(m.away, 'Goście'), m.away_score]
   ]) {
     const row = el('div', 'team-row');
     row.append(el('div', 'team', name));
-    if (result || scored) {
-      row.append(el('div', 'team-score', score == null ? '—' : String(score)));
-    }
+    if (showScores) row.append(el('div', 'team-score', scoreValue == null ? '—' : String(scoreValue)));
     teams.append(row);
   }
   card.append(teams);
-
-  // Celowo nie pokazujemy "Przed meczem" ani "Status nieznany"
-  // w zakładce Nadchodzące. Taki opis nie wnosi nowej informacji.
-  if (result) {
+  if (isPlaying && (m.home_score == null || m.away_score == null)) {
+    card.append(el('div', 'live-availability', 'Wynik nie jest jeszcze dostępny w API.'));
+  }
+  if (unconfirmed) {
+    card.append(el('div', 'pending-label', 'Minęła godzina rozpoczęcia. Czekamy na potwierdzenie wyniku.'));
+  }
+  if (kind === 'finished') {
     const known = {
       finished: 'Koniec meczu', ft: 'Koniec meczu',
-      full_time: 'Koniec meczu', completed: 'Koniec meczu',
+      full_time: 'Koniec meczu', completed: 'Koniec meczu', ended: 'Koniec meczu',
       postponed: 'Mecz przełożony', cancelled: 'Mecz odwołany'
     };
     const status = known[String(m.status || '').toLowerCase()] || '';
@@ -163,7 +201,8 @@ function makeMatchCard(m, result) {
 
 function upcoming(list) {
   content.replaceChildren(el('h2', 'section-title', 'Najbliższe mecze'));
-  if (!Array.isArray(list) || !list.length) {
+  list = (Array.isArray(list) ? list : []).filter(m => !isLive(m) && !isAfterKickoffUnconfirmed(m));
+  if (!list.length) {
     content.append(el('p', 'empty', 'Brak meczów do wyświetlenia.'));
     return;
   }
@@ -181,19 +220,43 @@ function upcoming(list) {
     summary.append(title, right);
     details.append(summary);
     const panel = el('div', 'round-panel');
-    for (const m of group.matches) panel.append(makeMatchCard(m, false));
+    for (const m of group.matches) panel.append(makeMatchCard(m, 'upcoming'));
     details.append(panel);
     content.append(details);
   });
 }
 
-function results(list) {
-  content.replaceChildren(el('h2', 'section-title', 'Ostatnie wyniki'));
-  if (!Array.isArray(list) || !list.length) {
+function results(list, liveFromApi = [], pendingFromApi = [], upcomingList = []) {
+  content.replaceChildren();
+  const previousUpcoming = Array.isArray(upcomingList) ? upcomingList : [];
+  // Dodatkowa zgodność: nawet jeśli plik data.json pochodzi jeszcze ze starej wersji,
+  // spotkania ze statusem live nie będą tkwiły w zakładce Nadchodzące.
+  const liveMatches = uniqueMatches([
+    ...(Array.isArray(liveFromApi) ? liveFromApi : []),
+    ...previousUpcoming.filter(isLive)
+  ]).sort((a, b) => (kickoffMillis(a) ?? 0) - (kickoffMillis(b) ?? 0));
+  const pendingMatches = uniqueMatches([
+    ...(Array.isArray(pendingFromApi) ? pendingFromApi : []),
+    ...previousUpcoming.filter(isAfterKickoffUnconfirmed)
+  ]).filter(m => !isLive(m));
+  const finishedMatches = (Array.isArray(list) ? list : []).filter(m => !isLive(m));
+  if (!liveMatches.length && !pendingMatches.length && !finishedMatches.length) {
+    content.append(el('h2', 'section-title', 'Wyniki'));
     content.append(el('p', 'empty', 'Brak meczów do wyświetlenia.'));
     return;
   }
-  for (const m of list) content.append(makeMatchCard(m, true));
+  if (liveMatches.length) {
+    content.append(el('h2', 'section-title live-heading', 'Mecze na żywo'));
+    for (const m of liveMatches) content.append(makeMatchCard(m, 'live'));
+  }
+  if (pendingMatches.length) {
+    content.append(el('h2', 'section-title', 'Oczekiwanie na wynik'));
+    for (const m of pendingMatches) content.append(makeMatchCard(m, 'pending'));
+  }
+  if (finishedMatches.length) {
+    content.append(el('h2', 'section-title', 'Ostatnie wyniki'));
+    for (const m of finishedMatches) content.append(makeMatchCard(m, 'finished'));
+  }
 }
 
 // Tabela pozostaje taka sama jak w poprzedniej wersji.
@@ -239,7 +302,7 @@ function render() {
   if (data.updated_at) updatedEl.textContent =
     `Ostatnia aktualizacja: ${dateText(data.updated_at)} · Źródło: Bzzoiro Sports Data`;
   if (tab === 'upcoming') upcoming(data.upcoming);
-  if (tab === 'results') results(data.results);
+  if (tab === 'results') results(data.results, data.live, data.pending, data.upcoming);
   if (tab === 'table') table(data.standings);
 }
 
@@ -247,8 +310,8 @@ async function load(force = false) {
   refreshBtn.disabled = true;
   refreshBtn.textContent = '↻ Pobieram…';
   try {
-    const r = await fetch('data.json' + (force ? '?t=' + Date.now() : ''),
-      { cache: force ? 'no-store' : 'default' });
+    // Za każdym razem sprawdź najnowszą publikację GitHub Pages.
+    const r = await fetch('data.json', { cache: 'no-store' });
     if (!r.ok) throw Error('HTTP ' + r.status);
     const d = await r.json();
     if (!d.ok) throw Error('Brak danych');
@@ -283,6 +346,8 @@ document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () =>
   render();
 }));
 refreshBtn.addEventListener('click', () => load(true));
+// Odśwież otwartą aplikację co kwadrans, bez dodatkowych wywołań Bzzoiro.
+setInterval(() => { if (!document.hidden) load(true); }, 15 * 60 * 1000);
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => navigator.serviceWorker
     .register('sw.js', { updateViaCache: 'none' })

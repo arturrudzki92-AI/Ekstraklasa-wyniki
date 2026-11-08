@@ -119,3 +119,48 @@ html[data-theme="dark"] {
 
 /* 4.2.4: Wyniki jako pierwsza zakładka, więcej miejsca dla Nadchodzące. */
 .tabs { grid-template-columns: minmax(0, .86fr) minmax(0, 1.42fr) minmax(0, .72fr); }
+
+/* 4.2.5: trwające mecze są na początku zakładki Wyniki. */
+.match.live-match {
+  border: 3px solid #bc202b;
+  box-shadow: 0 0 0 1px rgba(188, 32, 43, .12);
+}
+/* Zachowaj czerwony pasek po lewej przy Górniku i niebieskie tło. */
+.match.live-match.favorite-match {
+  border-left: 7px solid var(--favorite-border);
+  background: var(--favorite-background);
+}
+.live-heading { color: #b91c1c; }
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: #b91c1c;
+  color: white;
+  font-size: calc(16px * var(--font-mult));
+  font-weight: 900;
+  letter-spacing: .2px;
+  white-space: nowrap;
+}
+.live-badge::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: white;
+}
+.live-availability, .pending-label {
+  margin-top: 10px;
+  font-size: calc(16px * var(--font-mult));
+  font-weight: 700;
+  color: var(--muted);
+}
+.match.pending-match { border-style: dashed; }
+html[data-theme="dark"] .live-heading { color: #ff8d96; }
+@media(max-width:390px) {
+  .live-badge { font-size: calc(14px * var(--font-mult)); padding: 6px 8px; }
+}
