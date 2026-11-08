@@ -1,9 +1,10 @@
-name: Aktualizacja Ekstraklasy i publikacja
+ûname: Aktualizacja Ekstraklasy i publikacja
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '17 * * * *'
+    
+       - cron: '7,22,37,52 * * * *'
 
 permissions:
   contents: read
