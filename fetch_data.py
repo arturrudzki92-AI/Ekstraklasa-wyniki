@@ -161,51 +161,150 @@ def normalize_event(e):
         'home_score': score(e, 'home'),
         'away_score': score(e, 'away'),
         'round': event_round_number(e),
-        'minute': first(e, 'current_minute', 'minute'),
-        'period': first(e, 'period', 'match_period')
+        'minute': first(e, 'current_minute', 'minute') if first(e, 'current_minute', 'minute') is not None else (e.get('time') or {}).get('minute') if isinstance(e.get('time'), dict) else None,
+        'period': first(e, 'period', 'match_period') if first(e, 'period', 'match_period') is not None else (e.get('time') or {}).get('period') if isinstance(e.get('time'), dict) else None,
+        'provider_updated_at': first(e, 'last_updated_at', 'last_update_at', 'updated_at', 'last_update')
     }
 
 
-def enrich_with_live_feed(matches, league_id, season_id):
-    """Osobny live endpoint jest bardziej aktualny niż spis wszystkich meczów.
+def minute_number(raw):
+    """Approximate match minute only for comparing API snapshots (never guessing it)."""
+    if isinstance(raw, bool) or raw is None:
+        return None
+    try:
+        text = str(raw).strip().replace('′', '').replace("'", '')
+        match = re.fullmatch(r'(\d{1,3})(?:\+(\d{1,2}))?', text)
+        if match:
+            return int(match.group(1)) + int(match.group(2) or 0)
+    except (TypeError, ValueError):
+        pass
+    return None
 
-    Gdy endpoint nie jest chwilowo dostępny, zachowujemy dotychczasowe dane,
-    żeby awaria dodatkowego zapytania nie blokowała publikacji strony.
+
+def updated_time(raw):
+    if raw is None:
+        return None
+    try:
+        dt = match_datetime(raw)
+        return dt.timestamp() if dt else None
+    except (OverflowError, TypeError, ValueError):
+        return None
+
+
+def merge_live_snapshot(existing, candidate, origin):
+    """Never overwrite a newer clock with a clearly older source snapshot."""
+    previous_minute = minute_number(existing.get('minute'))
+    candidate_minute = minute_number(candidate.get('minute'))
+    previous_stamp = updated_time(existing.get('provider_updated_at'))
+    candidate_stamp = updated_time(candidate.get('provider_updated_at'))
+    older_clock = (previous_minute is not None and candidate_minute is not None
+                   and candidate_minute < previous_minute)
+    has_fresher_stamp = (candidate_stamp is not None and
+                         (previous_stamp is None or candidate_stamp > previous_stamp))
+    if older_clock and not has_fresher_stamp:
+        print(f'DIAGNOSTYKA LIVE: odrzucono starszy odczyt {origin} '
+              f'ID={existing.get("id")} minuta={candidate_minute} zamiast {previous_minute}')
+        return
+
+    new_status = candidate.get('status')
+    if new_status in FINISHED_STATUSES:
+        existing['status'] = 'finished'
+    elif new_status in STOPPED_STATUSES:
+        existing['status'] = new_status
+    else:
+        existing['status'] = 'live'
+
+    for field in ('home_score', 'away_score', 'minute', 'period', 'provider_updated_at'):
+        if candidate.get(field) is not None:
+            existing[field] = candidate[field]
+    if not existing.get('date') and candidate.get('date'):
+        existing['date'] = candidate['date']
+    if existing.get('round') is None and candidate.get('round') is not None:
+        existing['round'] = candidate['round']
+    existing['live_source'] = origin
+
+
+def unpack_event(raw):
+    if not isinstance(raw, dict):
+        return {}
+    for key in ('event', 'match', 'data'):
+        if isinstance(raw.get(key), dict) and (
+            'id' in raw[key] or 'event_id' in raw[key]
+        ):
+            return raw[key]
+    return raw
+
+
+def enrich_with_live_feed(matches, league_id, season_id):
+    """Cross-check live list with individual match detail for halftime/second half.
+
+    An API provider can return an outdated feed even when our site rebuild succeeds.
+    Diagnostics never include the API key or full private response.
     """
     by_id = {str(m['id']): m for m in matches if m.get('id') is not None}
+    live_items = []
     try:
         live_items = rows(get('/events/live/', {
             'league_id': league_id, 'season_id': season_id
         }))
     except (requests.RequestException, ValueError) as error:
         print('OSTRZEZENIE: endpoint live niedostepny:', type(error).__name__)
-        return matches
 
-    for e in live_items:
-        if not isinstance(e, dict):
-            continue
-        event_id = first(e, 'id', 'event_id')
-        if event_id is None:
+    for raw in live_items:
+        e = unpack_event(raw)
+        if not e:
             continue
         candidate = normalize_event(e)
-        if candidate['status'] in FINISHED_STATUSES:
-            continue  # końcowy wynik i tak trafia z listy sezonu
+        event_id = candidate.get('id')
+        if event_id is None:
+            continue
         existing = by_id.get(str(event_id))
         if existing is None:
-            # Endpoint jest filtrowany po lid i sid, a nie po wszystkich ligach.
             if candidate['home'] == 'Nieznana drużyna' or candidate['away'] == 'Nieznana drużyna':
                 continue
             candidate['status'] = 'live'
+            candidate['live_source'] = 'events/live'
             matches.append(candidate)
             by_id[str(event_id)] = candidate
         else:
-            existing['status'] = 'live'
-            for field in ('home_score', 'away_score', 'minute', 'period'):
-                if candidate[field] is not None:
-                    existing[field] = candidate[field]
-            if existing.get('round') is None and candidate['round'] is not None:
-                existing['round'] = candidate['round']
-    print('DIAGNOSTYKA: spotkania z endpointu live:', len(live_items))
+            merge_live_snapshot(existing, candidate, 'events/live')
+
+    # This adds at most one detail request per live match (up to 8), keeping
+    # 15-minute GitHub Actions scheduling comfortably within ordinary API limits.
+    live_candidates = [m for m in matches if is_live_match(m) and m.get('id') is not None]
+    for m in live_candidates[:8]:
+        event_id = m['id']
+        if not re.fullmatch(r'\d+', str(event_id)):
+            continue
+        try:
+            raw = get(f'/events/{event_id}/')
+            e = unpack_event(raw)
+            if e:
+                detail = normalize_event(e)
+                merge_live_snapshot(m, detail, 'events/detail')
+        except (requests.RequestException, ValueError) as error:
+            print(f'OSTRZEZENIE: detal live ID={event_id}: {type(error).__name__}')
+
+    now = datetime.now(timezone.utc)
+    for m in matches:
+        if not is_live_match(m):
+            continue
+        dt = match_datetime(m.get('date'))
+        minute = minute_number(m.get('minute'))
+        provider_dt = match_datetime(m.get('provider_updated_at'))
+        # Warn only, NEVER fabricate a clock or a score. Delays can originate
+        # at Bzzoiro or an upstream feed. 90 min since kickoff with 45' data
+        # is suspicious even after allowing for the interval.
+        stale_clock = dt is not None and (now - dt) > timedelta(minutes=90) and minute is not None and minute <= 45
+        stale_provider = provider_dt is not None and (now - provider_dt) > timedelta(minutes=25)
+        m['live_data_delayed'] = bool(stale_clock or stale_provider)
+        print('DIAGNOSTYKA LIVE:', f'ID={m.get("id")}', f'status={m.get("status")}',
+              f'minuta={m.get("minute")}',
+              f'wynik={m.get("home_score")}:{m.get("away_score")}',
+              f'zrodlo={m.get("live_source", "events/list")}',
+              f'opoznione={m["live_data_delayed"]}')
+    print('DIAGNOSTYKA: liczba spotkań /events/live/:', len(live_items),
+          '; liczba sprawdzonych szczegółów:', min(len(live_candidates), 8))
     return matches
 
 
