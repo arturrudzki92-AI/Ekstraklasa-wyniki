@@ -1,6 +1,6 @@
 import json, os, sys, re
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import requests
 
 BASE = 'https://sports.bzzoiro.com/api/v2'
@@ -135,36 +135,107 @@ def event_round_number(event):
     return None
 
 
+# Wartości statusów mogą się różnić zależnie od źródła meczu.
+LIVE_STATUSES = {'live', 'in_progress', 'inprogress', 'playing', '1h', '2h', 'ht',
+                 'halftime', 'half_time', 'extra_time', 'et'}
+FINISHED_STATUSES = {'finished', 'ft', 'full_time', 'completed', 'ended'}
+STOPPED_STATUSES = {'cancelled', 'canceled', 'postponed', 'abandoned'}
+
+
+def is_live_match(m):
+    return str(m.get('status') or '').lower().strip() in LIVE_STATUSES
+
+
+def is_finished_match(m):
+    return str(m.get('status') or '').lower().strip() in FINISHED_STATUSES
+
+
+def normalize_event(e):
+    """Ujednolicona forma potrzebna aplikacji. Zachowuje wynik 0:0!"""
+    return {
+        'id': first(e, 'id', 'event_id'),
+        'date': first(e, 'event_date', 'date', 'kickoff', 'start_time'),
+        'status': str(first(e, 'status', 'match_status') or 'unknown').lower().strip(),
+        'home': team(e, 'home'),
+        'away': team(e, 'away'),
+        'home_score': score(e, 'home'),
+        'away_score': score(e, 'away'),
+        'round': event_round_number(e),
+        'minute': first(e, 'current_minute', 'minute'),
+        'period': first(e, 'period', 'match_period')
+    }
+
+
+def enrich_with_live_feed(matches, league_id, season_id):
+    """Osobny live endpoint jest bardziej aktualny niż spis wszystkich meczów.
+
+    Gdy endpoint nie jest chwilowo dostępny, zachowujemy dotychczasowe dane,
+    żeby awaria dodatkowego zapytania nie blokowała publikacji strony.
+    """
+    by_id = {str(m['id']): m for m in matches if m.get('id') is not None}
+    try:
+        live_items = rows(get('/events/live/', {
+            'league_id': league_id, 'season_id': season_id
+        }))
+    except (requests.RequestException, ValueError) as error:
+        print('OSTRZEZENIE: endpoint live niedostepny:', type(error).__name__)
+        return matches
+
+    for e in live_items:
+        if not isinstance(e, dict):
+            continue
+        event_id = first(e, 'id', 'event_id')
+        if event_id is None:
+            continue
+        candidate = normalize_event(e)
+        if candidate['status'] in FINISHED_STATUSES:
+            continue  # końcowy wynik i tak trafia z listy sezonu
+        existing = by_id.get(str(event_id))
+        if existing is None:
+            # Endpoint jest filtrowany po lid i sid, a nie po wszystkich ligach.
+            if candidate['home'] == 'Nieznana drużyna' or candidate['away'] == 'Nieznana drużyna':
+                continue
+            candidate['status'] = 'live'
+            matches.append(candidate)
+            by_id[str(event_id)] = candidate
+        else:
+            existing['status'] = 'live'
+            for field in ('home_score', 'away_score', 'minute', 'period'):
+                if candidate[field] is not None:
+                    existing[field] = candidate[field]
+            if existing.get('round') is None and candidate['round'] is not None:
+                existing['round'] = candidate['round']
+    print('DIAGNOSTYKA: spotkania z endpointu live:', len(live_items))
+    return matches
+
+
+def needs_status_confirmation(m, now):
+    """Planowany początek już minął, ale API nie potwierdziło jeszcze live/FT."""
+    if is_live_match(m) or is_finished_match(m):
+        return False
+    status = str(m.get('status') or '').lower().strip()
+    if status in STOPPED_STATUSES:
+        return False
+    dt = match_datetime(m.get('date'))
+    return dt is not None and timedelta(minutes=1) <= now - dt <= timedelta(hours=4)
+
+
 def next_five_rounds(matches):
-    """Return fixtures from the next five matchdays, not just today."""
+    """Pięć najbliższych kolejek, bez spotkań już rozpoczętych."""
     now = datetime.now(timezone.utc)
-    finished = {'finished', 'ft', 'full_time', 'completed', 'ended',
-                'cancelled', 'canceled', 'postponed', 'abandoned'}
-    live = {'live', 'in_progress', 'playing', '1h', '2h', 'ht'}
     scheduled = {'scheduled', 'upcoming', 'not_started', 'notstarted',
-                 'ns', 'pending', 'fixture', 'tbd', 'timed', 'planned'}
+                 'ns', 'pending', 'fixture', 'tbd', 'timed', 'planned', 'unknown'}
     upcoming = []
     for m in matches:
         status = str(m.get('status') or '').lower().strip()
-        dt = match_datetime(m.get('date'))
-        if status in finished:
+        if status in LIVE_STATUSES | FINISHED_STATUSES | STOPPED_STATUSES:
             continue
-        # Include future matches even when the API calls them "scheduled".
-        # Also include scheduled matches whose kickoff is not yet published.
-        if status in live or (dt is not None and dt >= now) or (dt is None and status in scheduled):
+        dt = match_datetime(m.get('date'))
+        if (dt is not None and dt > now) or (dt is None and status in scheduled):
             upcoming.append(m)
 
     upcoming.sort(key=lambda m: (match_datetime(m.get('date')) is None,
                                  match_datetime(m.get('date')) or now))
-    if not upcoming:
-        from collections import Counter
-        statuses = Counter(m.get('status') for m in matches)
-        print('DIAGNOSTYKA: brak przyszłych meczów; statusy API:', dict(statuses),
-              '; przykładowe daty:', [m.get('date') for m in matches[:5]])
-        return []
-
-    # Select the first five rounds in chronological order, including all
-    # remaining fixtures from the current round.
     rounds = []
     for m in upcoming:
         n = parse_round_number(m.get('round'))
@@ -215,18 +286,9 @@ def main():
 
     sid = season.get('id')
     events = paged('/events/', {'league_id': lid, 'season_id': sid})
-    matches = []
-    for e in events:
-        matches.append({
-            'id': e.get('id'),
-            'date': first(e, 'event_date', 'date', 'kickoff', 'start_time'),
-            'status': str(first(e, 'status', 'match_status') or 'unknown').lower(),
-            'home': team(e, 'home'),
-            'away': team(e, 'away'),
-            'home_score': score(e, 'home'),
-            'away_score': score(e, 'away'),
-            'round': event_round_number(e)
-        })
+    matches = [normalize_event(e) for e in events if isinstance(e, dict)]
+    # Nawet przy wyniku 0:0 są zachowywane obie liczby zero.
+    enrich_with_live_feed(matches, lid, sid)
     matches.sort(key=lambda x: str(x.get('date') or ''))
     rounds_present = sorted({m['round'] for m in matches if m['round'] is not None})
     print(f"DIAGNOSTYKA: oficjalne numery kolejek z API: {rounds_present}")
@@ -264,12 +326,14 @@ def main():
         'league': first(league, 'name', 'league_name') or 'Ekstraklasa',
         'season': first(season, 'name') or str(season.get('year') or 'Bieżący sezon'),
         'upcoming': next_five_rounds(matches),
-        'results': [m for m in matches if m['status'] == 'finished'][::-1],
+        'live': [m for m in matches if is_live_match(m)],
+        'pending': [m for m in matches if needs_status_confirmation(m, datetime.now(timezone.utc))],
+        'results': [m for m in matches if is_finished_match(m)][::-1],
         'standings': table
     }
     OUT.parent.mkdir(exist_ok=True)
     OUT.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
-    print(f"OK: {data['league']} / {data['season']}; meczów {len(matches)}, nadchodzących {len(data['upcoming'])}, tabela {len(table)}")
+    print(f"OK: {data['league']} / {data['season']}; meczów {len(matches)}, na żywo {len(data['live'])}, nadchodzących {len(data['upcoming'])}, tabela {len(table)}")
 
 
 if __name__ == '__main__':
