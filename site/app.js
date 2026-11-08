@@ -147,6 +147,7 @@ function uniqueMatches(matches) {
 function matchMinute(m) {
   const raw = m.minute;
   if (raw === null || raw === undefined) return '';
+  if (['ht', 'halftime', 'half_time', 'half-time', 'half time'].includes(String(m.period || '').toLowerCase().trim())) return 'PRZERWA';
   const value = String(raw).trim().replace(/'$/, '');
   return /^\d{1,3}(\+\d{1,2})?$/.test(value) ? `${value}′` : '';
 }
@@ -179,6 +180,10 @@ function makeMatchCard(m, kind = 'upcoming') {
     teams.append(row);
   }
   card.append(teams);
+  if (isPlaying && m.live_data_delayed) {
+    card.append(el('div', 'live-stale',
+      'Uwaga: źródło wyników może być opóźnione. Sprawdź godzinę aktualizacji poniżej.'));
+  }
   if (isPlaying && (m.home_score == null || m.away_score == null)) {
     card.append(el('div', 'live-availability', 'Wynik nie jest jeszcze dostępny w API.'));
   }
@@ -289,8 +294,11 @@ function render() {
     return;
   }
   // Celowo nie wyświetlamy nazwy sezonu pod przyciskami nagłówka.
-  if (data.updated_at) updatedEl.textContent =
-    `Ostatnia aktualizacja: ${dateText(data.updated_at)} · Źródło: Bzzoiro Sports Data`;
+  if (data.updated_at) {
+    const mins = (Date.now() - Date.parse(data.updated_at)) / 60000;
+    const stale = Number.isFinite(mins) && mins > 25;
+    updatedEl.textContent = `${stale ? '⚠ Dane strony mogą być nieaktualne. ' : ''}Ostatnia aktualizacja: ${dateText(data.updated_at)} · Źródło: Bzzoiro Sports Data`;
+  }
   if (tab === 'upcoming') upcoming(data.upcoming);
   if (tab === 'results') results(data.results, data.live, data.pending, data.upcoming);
   if (tab === 'table') table(data.standings);
@@ -336,8 +344,11 @@ document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () =>
   render();
 }));
 refreshBtn.addEventListener('click', () => load(true));
-// Odśwież otwartą aplikację co kwadrans, bez dodatkowych wywołań Bzzoiro.
-setInterval(() => { if (!document.hidden) load(true); }, 15 * 60 * 1000);
+// Powrót do aplikacji z innej karty nie może zostawiać starego wyniku.
+document.addEventListener('visibilitychange', () => { if (!document.hidden) load(true); });
+window.addEventListener('pageshow', e => { if (e.persisted) load(true); });
+// Sprawdzaj publikowane dane co 5 minut, bez dodatkowych wywołań Bzzoiro.
+setInterval(() => { if (!document.hidden) load(true); }, 5 * 60 * 1000);
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => navigator.serviceWorker
     .register('sw.js', { updateViaCache: 'none' })

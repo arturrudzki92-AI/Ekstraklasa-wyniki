@@ -164,3 +164,7 @@ html[data-theme="dark"] .live-heading { color: #ff8d96; }
 @media(max-width:390px) {
   .live-badge { font-size: calc(14px * var(--font-mult)); padding: 6px 8px; }
 }
+
+/* V4.2.7: clear and accessible warning if live match provider is delayed. */
+.live-stale{margin-top:12px;padding:11px 13px;border:2px solid #b45309;border-radius:10px;background:#fff3d6;color:#6d3500;font-size:calc(16px * var(--font-mult));font-weight:800;line-height:1.35}
+html[data-theme="dark"] .live-stale{background:#513713;color:#fff1d1;border-color:#fbbf24}
