@@ -116,3 +116,6 @@ html[data-theme="dark"] {
 
 /* 4.2.2: nagłówek bez opisu sezonu. */
 #season { display: none; }
+
+/* 4.2.4: Wyniki jako pierwsza zakładka, więcej miejsca dla Nadchodzące. */
+.tabs { grid-template-columns: minmax(0, .86fr) minmax(0, 1.42fr) minmax(0, .72fr); }

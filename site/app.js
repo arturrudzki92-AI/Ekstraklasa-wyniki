@@ -1,11 +1,11 @@
-// Ekstraklasa 4.2.3: rozwijane kolejki i delikatne wyróżnienie Górnika Zabrze bez gwiazdek.
+// Ekstraklasa 4.2.4: rozwijane kolejki i delikatne wyróżnienie Górnika Zabrze bez gwiazdek.
 // Dane wciąż pochodzą z tego samego site/data.json. Nie potrzebujemy klucza API w przeglądarce.
 const content = document.querySelector('#content');
 const seasonEl = document.querySelector('#season');
 const updatedEl = document.querySelector('#updated');
 const refreshBtn = document.querySelector('#refresh');
 let data = null;
-let tab = 'upcoming';
+let tab = 'results';
 
 const el = (tag, cls, txt) => {
   const x = document.createElement(tag);
