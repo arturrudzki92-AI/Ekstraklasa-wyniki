@@ -1,4 +1,4 @@
-import json, os, sys
+import json, os, sys, re
 from pathlib import Path
 from datetime import datetime, timezone
 import requests
@@ -104,6 +104,37 @@ def match_datetime(value):
         return None
 
 
+def parse_round_number(raw):
+    """Parse the official matchday from Bzzoiro, ignoring general labels."""
+    if isinstance(raw, dict):
+        for key in ('round_number', 'number', 'matchday', 'round', 'round_label'):
+            found = parse_round_number(raw.get(key))
+            if found is not None:
+                return found
+        return None
+    if isinstance(raw, bool) or raw is None:
+        return None
+    if isinstance(raw, (int, float)):
+        n = int(raw)
+        return n if n == raw and 1 <= n <= 38 else None
+    label = str(raw).strip()
+    match = (re.fullmatch(r'(\d{1,2})', label)
+             or re.search(r'(?:kolejka|matchday|round|gameweek|runda)\s*[#:.-]*\s*(\d{1,2})\s*$', label, flags=re.I))
+    if not match:
+        return None
+    n = int(match.group(1))
+    return n if 1 <= n <= 38 else None
+
+
+def event_round_number(event):
+    # BSD documents round_number as the official matchday.
+    for key in ('round_number', 'matchday', 'round', 'round_label', 'round_name'):
+        found = parse_round_number(event.get(key))
+        if found is not None:
+            return found
+    return None
+
+
 def next_five_rounds(matches):
     """Return fixtures from the next five matchdays, not just today."""
     now = datetime.now(timezone.utc)
@@ -132,27 +163,17 @@ def next_five_rounds(matches):
               '; przykładowe daty:', [m.get('date') for m in matches[:5]])
         return []
 
-    def round_number(m):
-        r = m.get('round')
-        if isinstance(r, int):
-            return r
-        if isinstance(r, str):
-            import re
-            match = re.search(r'\d+', r)
-            return int(match.group()) if match else None
-        return None
-
     # Select the first five rounds in chronological order, including all
     # remaining fixtures from the current round.
     rounds = []
     for m in upcoming:
-        n = round_number(m)
+        n = parse_round_number(m.get('round'))
         if n is not None and n not in rounds:
             rounds.append(n)
         if len(rounds) == 5:
             break
-    if rounds and all(round_number(m) is not None for m in upcoming):
-        return [m for m in upcoming if round_number(m) in rounds]
+    if rounds and all(parse_round_number(m.get('round')) is not None for m in upcoming):
+        return [m for m in upcoming if parse_round_number(m.get('round')) in rounds]
     return upcoming[:45]
 
 
@@ -204,9 +225,11 @@ def main():
             'away': team(e, 'away'),
             'home_score': score(e, 'home'),
             'away_score': score(e, 'away'),
-            'round': first(e, 'round', 'matchday', 'round_name')
+            'round': event_round_number(e)
         })
     matches.sort(key=lambda x: str(x.get('date') or ''))
+    rounds_present = sorted({m['round'] for m in matches if m['round'] is not None})
+    print(f"DIAGNOSTYKA: oficjalne numery kolejek z API: {rounds_present}")
     print(f"DIAGNOSTYKA: API zwróciło {len(matches)} meczów")
 
     st = get(f'/leagues/{lid}/standings/', {'season_id': sid})
