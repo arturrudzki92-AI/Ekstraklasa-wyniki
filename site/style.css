@@ -113,3 +113,6 @@ html[data-theme="dark"] {
   .tabs { gap: 4px; padding: 9px 7px; }
   .tabs .tab { font-size: 16px; padding-inline: 1px; }
 }
+
+/* 4.2.2: nagłówek bez opisu sezonu. */
+#season { display: none; }

@@ -1,4 +1,4 @@
-// Ekstraklasa 4.2.1: rozwijane kolejki i delikatne wyróżnienie Górnika Zabrze bez gwiazdek.
+// Ekstraklasa 4.2.2: rozwijane kolejki i delikatne wyróżnienie Górnika Zabrze bez gwiazdek.
 // Dane wciąż pochodzą z tego samego site/data.json. Nie potrzebujemy klucza API w przeglądarce.
 const content = document.querySelector('#content');
 const seasonEl = document.querySelector('#season');
@@ -36,22 +36,82 @@ function isGornik(m) {
     /\bgornik\s+zabrze\b/.test(normalizeTeam(name)));
 }
 
-// Numery kolejek są pobierane z pola "round". Nie wymyślamy numerów,
-// jeżeli API nie zwróciło ich dla danego spotkania.
+// Gdy API podaje prawdziwy numer kolejki, zachowujemy go.
+// Wartości typu „Nadchodzące” to etykiety statusu, a nie numery kolejek.
 function roundInfo(raw) {
-  if (raw === null || raw === undefined || raw === '') {
-    return { key: 'unassigned', label: 'Pozostałe terminy' };
+  if (raw && typeof raw === 'object') {
+    raw = raw.number ?? raw.round_number ?? raw.matchday ?? raw.round ?? raw.name ?? null;
   }
+  if (raw === null || raw === undefined || raw === '') return null;
   const str = String(raw).trim();
-  const match = str.match(/^(\d{1,2})\.?\s*(?:kolejka|round|matchday|week)/i)
-    || str.match(/(?:kolejka|round|matchday|week)\s*[#:.-]?\s*(\d{1,2})/i)
-    || str.match(/(?:^|[-–])\s*(\d{1,2})\s*$/)
-    || str.match(/^(\d{1,2})$/);
-  if (match) {
-    const n = Number(match[1]);
-    if (n >= 1 && n <= 40) return { key: `r-${n}`, label: `Kolejka ${n}` };
+  const match = str.match(/^(\d{1,2})$/)
+    || str.match(/^(?:kolejka|round|matchday|gameweek|runda)\s*[#:.\- ]*\s*(\d{1,2})$/i)
+    || str.match(/^(\d{1,2})\.?\s*(?:kolejka|round|matchday|gameweek|runda)$/i);
+  if (!match) return null;
+  const n = Number(match[1]);
+  return n >= 1 && n <= 40 ? { key: `r-${n}`, label: `Kolejka ${n}` } : null;
+}
+
+function kickoffMillis(m) {
+  const n = Date.parse(m.date);
+  return Number.isFinite(n) ? n : null;
+}
+
+// Zwracamy osobne grupy nawet wtedy, gdy API każdemu meczowi
+// przypisze ogólną etykietę „Nadchodzące” zamiast numeru kolejki.
+function groupUpcomingMatches(list) {
+  const matches = [...list].sort((a, b) =>
+    (kickoffMillis(a) ?? Infinity) - (kickoffMillis(b) ?? Infinity));
+  const numbered = matches.map(m => roundInfo(m.round));
+
+  // Oficjalne numery z API mają pierwszeństwo. Nie korzystamy z tego
+  // trybu, jeśli choć jednemu spotkaniu brakuje numeru.
+  if (numbered.every(Boolean)) {
+    const groups = new Map();
+    matches.forEach((m, i) => {
+      const info = numbered[i];
+      if (!groups.has(info.key)) groups.set(info.key, { ...info, matches: [] });
+      groups.get(info.key).matches.push(m);
+    });
+    return [...groups.values()].slice(0, 5);
   }
-  return { key: `raw-${str}`, label: str };
+
+  // Awaryjnie dzielimy terminarz na pięć kolejnych bloków meczowych.
+  // W Ekstraklasie jedna kolejka obejmuje zwykle 9 meczów, a drużyna
+  // nie powinna występować dwukrotnie w tej samej kolejce.
+  const groups = [];
+  let current = null;
+  let usedTeams = new Set();
+  let lastKickoff = null;
+  const DAY = 24 * 60 * 60 * 1000;
+  function startGroup() {
+    current = { key: `dates-${groups.length + 1}`, label: '', matches: [] };
+    groups.push(current);
+    usedTeams = new Set();
+    lastKickoff = null;
+  }
+  for (const m of matches) {
+    const t = kickoffMillis(m);
+    const names = [m.home, m.away]
+      .map(normalizeTeam)
+      .filter(n => n && !n.includes('nieznana druzyna'));
+    const teamRepeated = names.some(n => usedTeams.has(n));
+    const longBreak = lastKickoff !== null && t !== null &&
+      t - lastKickoff >= 3.5 * DAY;
+    const noDate = t === null;
+    if (!current || current.matches.length >= 9 || teamRepeated || longBreak ||
+        (noDate && current.matches.some(x => kickoffMillis(x) !== null))) {
+      startGroup();
+    }
+    current.matches.push(m);
+    names.forEach(n => usedTeams.add(n));
+    if (t !== null) lastKickoff = t;
+  }
+  const visible = groups.slice(0, 5);
+  visible.forEach((g, i) => {
+    g.label = `Kolejka ${i + 1} z ${visible.length}`;
+  });
+  return visible;
 }
 
 function roundDates(matches) {
@@ -97,7 +157,7 @@ function makeMatchCard(m, result) {
     };
     const status = known[String(m.status || '').toLowerCase()] || '';
     const round = roundInfo(m.round);
-    const label = [status, round.key !== 'unassigned' ? round.label : ''].filter(Boolean).join(' · ');
+    const label = [status, round?.label || ''].filter(Boolean).join(' · ');
     if (label) card.append(el('div', 'status', label));
   }
   return card;
@@ -109,17 +169,7 @@ function upcoming(list) {
     content.append(el('p', 'empty', 'Brak meczów do wyświetlenia.'));
     return;
   }
-  const groups = new Map();
-  const sorted = [...list].sort((a, b) => {
-    const x = Date.parse(a.date), y = Date.parse(b.date);
-    return (Number.isNaN(x) ? Infinity : x) - (Number.isNaN(y) ? Infinity : y);
-  });
-  for (const m of sorted) {
-    const info = roundInfo(m.round);
-    if (!groups.has(info.key)) groups.set(info.key, { ...info, matches: [] });
-    groups.get(info.key).matches.push(m);
-  }
-  const blocks = [...groups.values()];
+  const blocks = groupUpcomingMatches(list);
   // Pierwsza kolejka jest rozwinięta, pozostałe można otwierać niezależnie.
   blocks.forEach((group, idx) => {
     const details = el('details', 'round-block');
@@ -187,7 +237,7 @@ function render() {
       'Brak danych. Administrator musi uruchomić aktualizację w GitHub Actions.'));
     return;
   }
-  seasonEl.textContent = `${val(data.league, 'Ekstraklasa')} · ${val(data.season, 'bieżący sezon')}`;
+  // Celowo nie wyświetlamy nazwy sezonu pod przyciskami nagłówka.
   if (data.updated_at) updatedEl.textContent =
     `Ostatnia aktualizacja: ${dateText(data.updated_at)} · Źródło: Bzzoiro Sports Data`;
   if (tab === 'upcoming') upcoming(data.upcoming);
@@ -218,7 +268,7 @@ async function load(force = false) {
     } else {
       content.replaceChildren(el('p', 'error',
         'Nie można pobrać danych. Sprawdź połączenie lub konfigurację API w GitHub.'));
-      seasonEl.textContent = 'Dane chwilowo niedostępne';
+      // Nazwa sezonu nie jest wyświetlana w interfejsie.
     }
   } finally {
     refreshBtn.disabled = false;
