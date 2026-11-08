@@ -40,3 +40,76 @@ td.points{font-size:calc(24px * var(--font-mult))}
 .team-score{font-size:calc(30px * var(--font-mult));font-weight:900;min-width:1.3em;text-align:right;color:var(--score-ink)}
 .fixture-label{text-align:center;color:var(--muted);font-size:calc(17px * var(--font-mult));font-weight:800;padding:6px 0}
 @media(max-width:390px){.team-row .team{font-size:calc(23px * var(--font-mult))}}
+
+/* V4.2: rozwijane kolejki i dyskretne wyróżnienie Górnika Zabrze. */
+:root {
+  --favorite-background: #eaf5ff;
+  --favorite-border: #cf2434;
+}
+html[data-theme="dark"] {
+  --favorite-background: #193b53;
+  --favorite-border: #ff6574;
+}
+.round-block {
+  margin: 0 0 15px;
+  overflow: hidden;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: 18px;
+}
+.round-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 82px;
+  padding: 16px;
+  cursor: pointer;
+  list-style: none;
+  background: var(--subtle);
+  color: var(--ink);
+}
+.round-toggle::-webkit-details-marker { display: none; }
+.round-toggle:focus-visible { outline: 4px solid var(--focus); outline-offset: -4px; }
+.round-name { display: block; font-size: calc(24px * var(--font-mult)); font-weight: 900; line-height: 1.22; }
+.round-dates { display: block; margin-top: 4px; font-size: calc(18px * var(--font-mult)); color: var(--muted); font-weight: 700; }
+.round-right { display: flex; flex-wrap: wrap; justify-content: end; align-items: center; gap: 10px; }
+.round-chevron { font-size: 30px; font-weight: 900; line-height: 1; }
+.round-chevron::before { content: '+'; }
+.round-block[open] .round-chevron::before { content: '−'; }
+.round-panel { padding: 13px 12px 1px; }
+.match-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.match-meta .date { margin: 0; }
+.match.favorite-match {
+  background: var(--favorite-background);
+  border-left: 7px solid var(--favorite-border);
+  padding-left: 12px;
+}
+@media (max-width: 430px) {
+  .round-toggle { padding: 13px; }
+  .round-panel { padding: 10px 8px 1px; }
+}
+
+/* V4.2.1: napisy zakładek w jednej linii także przy największej czcionce.
+   Oddzielny responsywny rozmiar dla menu, aby 3 przyciski zmieściły się na małym telefonie. */
+.tabs {
+  grid-template-columns: minmax(0, 1.42fr) minmax(0, .86fr) minmax(0, .72fr);
+  gap: 6px;
+  padding: 10px 10px;
+}
+.tabs .tab {
+  min-width: 0;
+  min-height: 66px;
+  padding: 8px 2px;
+  font-size: clamp(16px, 4.6vw, 21px);
+  line-height: 1.12;
+  letter-spacing: -.15px;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+@media (max-width: 350px) {
+  .tabs { gap: 4px; padding: 9px 7px; }
+  .tabs .tab { font-size: 16px; padding-inline: 1px; }
+}
