@@ -1,10 +1,9 @@
-ûname: Aktualizacja Ekstraklasy i publikacja
+name: Ekstraklasa - aktualizacja i publikacja
 
 on:
   workflow_dispatch:
   schedule:
-    
-       - cron: '7,22,37,52 * * * *'
+    - cron: '7,22,37,52 * * * *'
 
 permissions:
   contents: read
@@ -13,7 +12,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   update-and-deploy:
@@ -33,7 +32,7 @@ jobs:
       - name: Zainstaluj biblioteki
         run: pip install -r requirements.txt
 
-      - name: Pobierz dane meczów
+      - name: Pobierz dane meczow
         env:
           BSD_API_KEY: ${{ secrets.BSD_API_KEY }}
         run: python fetch_data.py
@@ -41,11 +40,11 @@ jobs:
       - name: Przygotuj GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Prześlij pliki strony
+      - name: Przeslij pliki strony
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
 
-      - name: Opublikuj aplikację
+      - name: Opublikuj aplikacje
         id: deployment
         uses: actions/deploy-pages@v4
