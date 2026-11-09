@@ -168,3 +168,120 @@ html[data-theme="dark"] .live-heading { color: #ff8d96; }
 /* V4.2.7: clear and accessible warning if live match provider is delayed. */
 .live-stale{margin-top:12px;padding:11px 13px;border:2px solid #b45309;border-radius:10px;background:#fff3d6;color:#6d3500;font-size:calc(16px * var(--font-mult));font-weight:800;line-height:1.35}
 html[data-theme="dark"] .live-stale{background:#513713;color:#fff1d1;border-color:#fbbf24}
+
+
+/* V4.2.9: jasny, ciemny i wysoki kontrast. */
+.theme-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  border: 1px solid rgba(255,255,255,.7);
+  border-radius: 14px;
+  padding: 6px 9px;
+  min-height: 56px;
+}
+.theme-label {font-size: 18px; font-weight: 900; color: #fff;}
+.theme-select {
+  min-height: 46px;
+  max-width: 200px;
+  padding: 7px 9px;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  background: #fff;
+  color: #111827;
+  font: 900 19px Arial, Helvetica, sans-serif;
+  cursor: pointer;
+}
+.theme-select:focus-visible {outline: 4px solid var(--focus); outline-offset: 3px;}
+@media(max-width:430px){
+  .theme-controls{flex: 1 1 190px; justify-content: space-between;}
+  .theme-select{flex: 1 1 100px; min-width: 100px;}
+}
+html[data-theme="contrast"] {
+  --navy: #000;
+  --navy2: #000;
+  --paper: #fff;
+  --ink: #000;
+  --muted: #000;
+  --line: #000;
+  --surface: #fff;
+  --subtle: #fff;
+  --tabbar: #fff;
+  --score-bg: #fff;
+  --score-ink: #000;
+  --focus: #ffcc00;
+  --favorite-background: #eaf5ff;
+  --favorite-border: #bb001c;
+  color-scheme: light;
+}
+html[data-theme="contrast"] .tabs {border-bottom: 3px solid #000;}
+html[data-theme="contrast"] .tabs .tab {
+  background: #fff;
+  color: #000;
+  border: 3px solid #000;
+}
+html[data-theme="contrast"] .tabs .tab.active {background: #000; color: #fff;}
+html[data-theme="contrast"] .match,
+html[data-theme="contrast"] .round-block,
+html[data-theme="contrast"] .table-wrap,
+html[data-theme="contrast"] .notice,
+html[data-theme="contrast"] .empty,
+html[data-theme="contrast"] .error {border-width: 3px;}
+html[data-theme="contrast"] .round-toggle {border-bottom: 2px solid #000;}
+html[data-theme="contrast"] .team-row + .team-row {border-top: 2px solid #000;}
+html[data-theme="contrast"] .match.favorite-match {
+  border-left: 8px solid var(--favorite-border);
+  background: var(--favorite-background);
+}
+html[data-theme="contrast"] .match.live-match {border: 3px solid #aa0018;}
+html[data-theme="contrast"] .match.live-match.favorite-match {border-left: 8px solid var(--favorite-border);}
+html[data-theme="contrast"] .live-heading {color: #99001a;}
+html[data-theme="contrast"] .live-badge {background: #99001a; color: #fff;}
+html[data-theme="contrast"] .live-stale {background: #fff1b8; color: #000; border-color: #000;}
+html[data-theme="contrast"] .match-meta .date,
+html[data-theme="contrast"] .round-dates,
+html[data-theme="contrast"] footer,
+html[data-theme="contrast"] #updated {color:#000;}
+
+
+/* 4.2.9: wielkie litery i mocne pogrubienie najważniejszych treści.
+   Treści pomocnicze i ostrzeżenia pozostają w zwykłej pisowni,
+   by nie tworzyć długich, trudniejszych w czytaniu bloków. */
+h1, .eyebrow,
+.tabs .tab, .section-title,
+.round-name, .round-dates,
+.match-meta .date, .team-row .team,
+.live-badge, th, td.club,
+.font-label, .font-choice, .theme-label, .theme-select, .refresh {
+  text-transform: uppercase;
+  font-weight: 900;
+}
+.team-row .team {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
+  line-height: 1.22;
+  text-wrap: pretty;
+}
+/* Daj nazwom klubów możliwie dużo miejsca; wynik pozostaje z prawej. */
+.team-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+/* Trzy zakładki muszą zmieścić się w jednym wierszu także wielkimi literami. */
+.tabs {grid-template-columns:minmax(0, .86fr) minmax(0, 1.52fr) minmax(0, .74fr);gap:5px;}
+.tabs .tab {
+  font-size:clamp(15px,4.2vw,19px);
+  letter-spacing:-.35px;
+  white-space:nowrap;
+  word-break:normal;
+  overflow-wrap:normal;
+  min-width:0;
+  padding-inline:2px;
+}
+/* W tabeli zachowujemy przewijanie poziome i czytelne nazwy klubów. */
+td.club { letter-spacing:.1px; }
+@media(max-width:350px){
+  .tabs {padding-inline:6px;gap:4px;}
+  .tabs .tab {font-size:14px;letter-spacing:-.45px;padding-inline:1px;}
+}

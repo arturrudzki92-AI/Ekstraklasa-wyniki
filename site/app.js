@@ -1,4 +1,4 @@
-// Ekstraklasa 4.2.6: rozwijane kolejki i delikatne wyróżnienie Górnika Zabrze bez gwiazdek.
+// Ekstraklasa 4.2.9: rozwijane kolejki i delikatne wyróżnienie Górnika Zabrze bez gwiazdek.
 // Dane wciąż pochodzą z tego samego site/data.json. Nie potrzebujemy klucza API w przeglądarce.
 const content = document.querySelector('#content');
 const seasonEl = document.querySelector('#season');
@@ -357,23 +357,21 @@ if ('serviceWorker' in navigator) {
 }
 load();
 
-// Zapamiętanie motywu na tym urządzeniu.
-const themeBtn = document.querySelector('#themeToggle');
+// Trzy motywy: jasny, ciemny i wysoki kontrast. Zachowujemy istniejące ustawienie użytkownika.
+const themeSelect = document.querySelector('#themeSelect');
+const validThemes = new Set(['light', 'dark', 'contrast']);
 function applyTheme(mode) {
-  const dark = mode === 'dark';
-  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-  themeBtn.textContent = dark ? '☀ Jasny' : '☾ Ciemny';
-  themeBtn.setAttribute('aria-pressed', String(dark));
-  themeBtn.setAttribute('aria-label', dark ? 'Włącz jasny motyw' : 'Włącz ciemny motyw');
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',
-    dark ? '#101a25' : '#12324c');
-  try { localStorage.setItem('ekstraklasa-theme', mode); } catch {}
+  const chosen = validThemes.has(mode) ? mode : 'light';
+  document.documentElement.dataset.theme = chosen;
+  if (themeSelect) themeSelect.value = chosen;
+  const colors = {light: '#12324c', dark: '#101a25', contrast: '#000000'};
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', colors[chosen]);
+  try { localStorage.setItem('ekstraklasa-theme', chosen); } catch {}
 }
 let savedTheme = 'light';
 try { savedTheme = localStorage.getItem('ekstraklasa-theme') || 'light'; } catch {}
 applyTheme(savedTheme);
-themeBtn.addEventListener('click', () =>
-  applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+themeSelect?.addEventListener('change', () => applyTheme(themeSelect.value));
 
 // Rozmiar czcionki: duża (domyślna), większa, największa.
 const fontButtons = [...document.querySelectorAll('.font-choice')];
