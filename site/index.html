@@ -1,4 +1,27 @@
-<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#10243a"><meta name="description" content="Terminarz, wyniki i tabela Ekstraklasy"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg"><link rel="stylesheet" href="style.css?v=4.2.9"><title>Ekstraklasa – wyniki i terminarz</title></head><body>
-<header><div class="head"><div><p class="eyebrow">POLSKA PIŁKA</p><h1>Ekstraklasa</h1></div><div class="head-actions"><div class="font-controls" role="group" aria-label="Wielkość czcionki"><span class="font-label">Tekst</span><button type="button" class="font-choice" data-font="base" aria-pressed="true">Duża</button><button type="button" class="font-choice" data-font="larger" aria-pressed="false">Większa</button><button type="button" class="font-choice" data-font="largest" aria-pressed="false">Największa</button></div><div class="theme-controls"><label class="theme-label" for="themeSelect">Motyw</label><select id="themeSelect" class="theme-select" aria-label="Wybierz motyw kolorystyczny"><option value="light">Jasny</option><option value="dark">Ciemny</option><option value="contrast">Kontrast</option></select></div><button id="refresh" class="refresh">↻ Odśwież</button></div></div></header>
+<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#10243a"><meta name="description" content="Terminarz, wyniki i tabela Ekstraklasy"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg"><link rel="stylesheet" href="style.css?v=4.2.10"><title>Ekstraklasa – wyniki i terminarz</title></head><body>
+<header>
+  <div class="head">
+    <div class="brand"><p class="eyebrow">POLSKA PIŁKA</p><h1>Ekstraklasa</h1></div>
+    <div class="head-actions">
+      <div class="font-controls" role="group" aria-label="Wielkość czcionki">
+        <span class="font-label">TEKST</span>
+        <div class="font-buttons">
+          <button type="button" class="font-choice" data-font="base" aria-pressed="true" aria-label="Duży tekst">DUŻY</button>
+          <button type="button" class="font-choice" data-font="larger" aria-pressed="false" aria-label="Większy tekst">WIĘKSZA</button>
+          <button type="button" class="font-choice" data-font="largest" aria-pressed="false" aria-label="Maksymalny rozmiar tekstu">MAX</button>
+        </div>
+      </div>
+      <div class="theme-controls" role="group" aria-label="Motyw kolorystyczny">
+        <span class="theme-label">MOTYW</span>
+        <div class="theme-buttons">
+          <button type="button" class="theme-choice" data-theme-choice="light" aria-pressed="true" aria-label="Jasny motyw">JASNY</button>
+          <button type="button" class="theme-choice" data-theme-choice="dark" aria-pressed="false" aria-label="Ciemny motyw">CIEMNY</button>
+          <button type="button" class="theme-choice" data-theme-choice="contrast" aria-pressed="false" aria-label="Wysoki kontrast">KONTR.</button>
+        </div>
+      </div>
+      <button type="button" id="refresh" class="refresh">↻ ODŚWIEŻ</button>
+    </div>
+  </div>
+</header>
 <nav class="tabs" aria-label="Sekcje"><button class="tab active" data-tab="results" aria-selected="true">Wyniki</button><button class="tab" data-tab="upcoming" aria-selected="false">Nadchodzące</button><button class="tab" data-tab="table" aria-selected="false">Tabela</button></nav>
-<main id="content" tabindex="-1"><p class="empty">Pobieram dane…</p></main><footer><p id="updated">Dane: Bzzoiro Sports Data.</p><p>Informacje mogą być opóźnione. Oficjalnym źródłem jest organizator rozgrywek.</p></footer><script src="app.js?v=4.2.9" defer></script></body></html>
+<main id="content" tabindex="-1"><p class="empty">Pobieram dane…</p></main><footer><p id="updated">Dane: Bzzoiro Sports Data.</p><p>Informacje mogą być opóźnione. Oficjalnym źródłem jest organizator rozgrywek.</p></footer><script src="app.js?v=4.2.10" defer></script></body></html>

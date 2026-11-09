@@ -1,4 +1,4 @@
-// Ekstraklasa 4.2.9: rozwijane kolejki i delikatne wyróżnienie Górnika Zabrze bez gwiazdek.
+// Ekstraklasa 4.2.10: rozwijane kolejki i delikatne wyróżnienie Górnika Zabrze bez gwiazdek.
 // Dane wciąż pochodzą z tego samego site/data.json. Nie potrzebujemy klucza API w przeglądarce.
 const content = document.querySelector('#content');
 const seasonEl = document.querySelector('#season');
@@ -357,21 +357,24 @@ if ('serviceWorker' in navigator) {
 }
 load();
 
-// Trzy motywy: jasny, ciemny i wysoki kontrast. Zachowujemy istniejące ustawienie użytkownika.
-const themeSelect = document.querySelector('#themeSelect');
+// Trzy oddzielne przyciski motywów: jasny, ciemny, kontrast.
+// Zapamiętujemy wybór lokalnie i zaznaczamy aktualny przycisk.
+const themeButtons = [...document.querySelectorAll('.theme-choice')];
 const validThemes = new Set(['light', 'dark', 'contrast']);
 function applyTheme(mode) {
   const chosen = validThemes.has(mode) ? mode : 'light';
   document.documentElement.dataset.theme = chosen;
-  if (themeSelect) themeSelect.value = chosen;
-  const colors = {light: '#12324c', dark: '#101a25', contrast: '#000000'};
+  themeButtons.forEach(button => button.setAttribute('aria-pressed',
+    String(button.dataset.themeChoice === chosen)));
+  const colors = { light: '#12324c', dark: '#101a25', contrast: '#000000' };
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', colors[chosen]);
   try { localStorage.setItem('ekstraklasa-theme', chosen); } catch {}
 }
 let savedTheme = 'light';
 try { savedTheme = localStorage.getItem('ekstraklasa-theme') || 'light'; } catch {}
 applyTheme(savedTheme);
-themeSelect?.addEventListener('change', () => applyTheme(themeSelect.value));
+themeButtons.forEach(button => button.addEventListener('click',
+  () => applyTheme(button.dataset.themeChoice)));
 
 // Rozmiar czcionki: duża (domyślna), większa, największa.
 const fontButtons = [...document.querySelectorAll('.font-choice')];

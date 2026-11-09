@@ -285,3 +285,101 @@ td.club { letter-spacing:.1px; }
   .tabs {padding-inline:6px;gap:4px;}
   .tabs .tab {font-size:14px;letter-spacing:-.45px;padding-inline:1px;}
 }
+
+
+/* V4.2.10: krótkie etykiety i dwa zestawy 3 dużych przycisków;
+   ODŚWIEŻ zawsze w osobnym wierszu pod ustawieniami. */
+header .head {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 15px;
+}
+header .head-actions {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  max-width: 680px;
+}
+header .font-controls,
+header .theme-controls {
+  width: 100%;
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 7px;
+  min-height: 60px;
+  border: 1px solid rgba(255,255,255,.7);
+  border-radius: 14px;
+}
+header .font-label,
+header .theme-label {
+  margin: 0;
+  padding: 0 2px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+header .font-buttons,
+header .theme-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1.28fr .75fr;
+  gap: 5px;
+  min-width: 0;
+  width: 100%;
+}
+header .theme-buttons { grid-template-columns: 1fr 1.08fr .95fr; }
+header .font-choice,
+header .theme-choice {
+  min-width: 0;
+  width: 100%;
+  min-height: 47px;
+  padding: 6px 2px;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  background: transparent;
+  color: #fff;
+  font: 900 clamp(13px,3.9vw,18px)/1.1 Arial,Helvetica,sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: -.15px;
+}
+header .font-choice[aria-pressed="true"],
+header .theme-choice[aria-pressed="true"] {
+  background: #fff;
+  color: #10243a;
+}
+header .theme-choice[aria-pressed="true"] { color: #111827; }
+header .refresh {
+  display: block;
+  flex: none;
+  align-self: stretch;
+  width: 100%;
+  margin: 0;
+  min-height: 54px;
+  padding: 10px;
+  text-align: center;
+  font-size: 19px;
+  text-transform: uppercase;
+  font-weight: 900;
+}
+@media(max-width:360px) {
+  header { padding-inline: 12px; }
+  header .font-controls,
+  header .theme-controls {grid-template-columns: 51px minmax(0, 1fr); gap:5px; padding:6px;}
+  header .font-label,
+  header .theme-label {font-size:12px;padding:0 1px;}
+  header .font-buttons,
+  header .theme-buttons {gap:4px;}
+  header .font-choice,
+  header .theme-choice {font-size:13px;letter-spacing:-.3px;padding-inline:0;}
+}
