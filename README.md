@@ -1,2 +1,0 @@
-# Ekstraklasa-wyniki
-Ekstraklasa wyniki
