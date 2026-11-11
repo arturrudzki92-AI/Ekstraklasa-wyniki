@@ -383,3 +383,14 @@ header .refresh {
   header .font-choice,
   header .theme-choice {font-size:13px;letter-spacing:-.3px;padding-inline:0;}
 }
+
+/* V5.0: wybór rozgrywek, zachowana duża czcionka, trzy motywy. */
+.competition-nav{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;max-width:760px;margin:0 auto;padding:12px;background:var(--paper)}
+.competition-choice{min-width:0;min-height:62px;border:2px solid var(--line);border-radius:13px;background:var(--surface);color:var(--ink);font:900 clamp(13px,3.65vw,20px)/1.1 Arial,Helvetica,sans-serif;letter-spacing:-.2px;text-transform:uppercase;white-space:nowrap;cursor:pointer;padding:10px 4px}
+.competition-choice[aria-pressed="true"]{background:var(--navy2);color:#fff;border-color:var(--navy2)}
+.competition-choice:focus-visible{outline:4px solid var(--focus);outline-offset:2px}
+body[data-competition="cup"] .tabs{grid-template-columns:minmax(0,.9fr) minmax(0,1.5fr)}
+body[data-competition="cup"] .tabs .tab[data-tab="table"]{display:none}
+html[data-theme="contrast"] .competition-choice{border:3px solid #000;background:#fff;color:#000}
+html[data-theme="contrast"] .competition-choice[aria-pressed="true"]{background:#000;color:#fff}
+@media(max-width:350px){.competition-nav{padding:8px 7px;gap:5px}.competition-choice{font-size:12px;letter-spacing:-.35px;padding-inline:2px}}
