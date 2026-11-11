@@ -165,8 +165,10 @@ def normalize_event(e):
         'round_name': first(e, 'round_name'),
         'stage': first(e, 'stage'),
         'stage_name': first(e, 'stage_name'),
-        'extra_time_score': first(e, 'extra_time_score'),
-        'penalty_shootout': first(e, 'penalty_shootout'),
+        'extra_time_score': first(e, 'extra_time_score', 'extra_time') if first(e, 'extra_time_score', 'extra_time') is not None else (
+            (e.get('score') or {}).get('extra_time_score') if isinstance(e.get('score'), dict) else None),
+        'penalty_shootout': first(e, 'penalty_shootout') if first(e, 'penalty_shootout') is not None else (
+            (e.get('score') or {}).get('penalty_shootout') if isinstance(e.get('score'), dict) else None),
         'minute': first(e, 'current_minute', 'minute') if first(e, 'current_minute', 'minute') is not None else (e.get('time') or {}).get('minute') if isinstance(e.get('time'), dict) else None,
         'period': first(e, 'period', 'match_period') if first(e, 'period', 'match_period') is not None else (e.get('time') or {}).get('period') if isinstance(e.get('time'), dict) else None,
         'provider_updated_at': first(e, 'last_updated_at', 'last_update_at', 'updated_at', 'last_update')
@@ -220,7 +222,8 @@ def merge_live_snapshot(existing, candidate, origin):
     else:
         existing['status'] = 'live'
 
-    for field in ('home_score', 'away_score', 'minute', 'period', 'provider_updated_at'):
+    for field in ('home_score', 'away_score', 'minute', 'period', 'provider_updated_at',
+                  'extra_time_score', 'penalty_shootout'):
         if candidate.get(field) is not None:
             existing[field] = candidate[field]
     if not existing.get('date') and candidate.get('date'):
@@ -354,6 +357,46 @@ def next_five_rounds(matches):
 
 
 
+
+def enrich_finished_cup_matches(matches, max_requests=12):
+    """Check details for recent tied cup matches, where ET or penalties can
+    decide the winner even though regulation time remains 0:0 or 1:1.
+
+    Requests are capped to protect the free API quota (max 12 per run).
+    """
+    candidates = sorted(
+        (m for m in matches
+         if is_finished_match(m) and m.get('id') is not None
+         and m.get('home_score') is not None
+         and m.get('away_score') is not None
+         and str(m['home_score']) == str(m['away_score'])
+         and re.fullmatch(r'\d+', str(m['id']))),
+        key=lambda m: match_datetime(m.get('date')) or datetime.min.replace(tzinfo=timezone.utc),
+        reverse=True
+    )
+    fetched = 0
+    details_added = 0
+    for match in candidates[:max_requests]:
+        try:
+            raw = get(f'/events/{match["id"]}/')
+            detail = normalize_event(unpack_event(raw))
+            fetched += 1
+            if detail.get('extra_time_score') is not None:
+                match['extra_time_score'] = detail['extra_time_score']
+                details_added += 1
+            if detail.get('penalty_shootout') is not None:
+                match['penalty_shootout'] = detail['penalty_shootout']
+                details_added += 1
+            for field in ('home_score', 'away_score', 'provider_updated_at'):
+                if detail.get(field) is not None:
+                    match[field] = detail[field]
+        except (requests.RequestException, RuntimeError, ValueError, TypeError) as error:
+            print('OSTRZEZENIE: szczegoly Pucharu Polski ID=' +
+                  str(match.get('id')) + ': ' + type(error).__name__)
+    print(f'PUCHAR POLSKI: sprawdzono szczegoly {fetched}/{min(max_requests,len(candidates))} '
+          f'remisow po 90 min; pola dogrywka/karne: {details_added}')
+
+
 def build_polish_cup():
     """Puchar Polski: oddzielne dane; ewentualny błąd nie blokuje Ekstraklasy."""
     lid = 46  # Bzzoiro Sports Data /leagues/46/
@@ -378,6 +421,7 @@ def build_polish_cup():
     events = paged('/events/', {'league_id': lid, 'season_id': sid})
     matches = [normalize_event(e) for e in events if isinstance(e, dict)]
     enrich_with_live_feed(matches, lid, sid)
+    enrich_finished_cup_matches(matches)
     matches.sort(key=lambda m: str(m.get('date') or ''))
     now = datetime.now(timezone.utc)
     upcoming = []
