@@ -1,0 +1,391 @@
+:root{color-scheme:light;--navy:#10243a;--navy2:#183b5b;--paper:#f4f6f8;--ink:#111827;--muted:#4b5563;--line:#cbd5df;--focus:#ffbf47}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Arial,Helvetica,sans-serif;line-height:1.45}header{background:var(--navy);color:white;padding:max(22px,env(safe-area-inset-top)) 20px 22px}.head{display:flex;justify-content:space-between;align-items:center;gap:12px}.eyebrow{margin:0 0 4px;font-size:15px;font-weight:800;letter-spacing:1.4px}h1{margin:0;font-size:clamp(34px,9vw,46px);line-height:1.05;font-weight:900}#season{margin:12px 0 0;font-size:19px;font-weight:700;color:#e4edf5}.refresh{border:2px solid white;border-radius:14px;background:var(--navy2);color:white;min-height:54px;padding:8px 12px;font-size:18px;font-weight:800}.tabs{display:grid;grid-template-columns:1fr 1fr .78fr;gap:7px;padding:12px;background:#e5eaf0;position:sticky;top:0;z-index:2}.tab{border:2px solid #536579;border-radius:13px;background:white;color:var(--navy);min-height:62px;padding:8px 4px;font-size:clamp(17px,4.4vw,21px);font-weight:900}.tab.active{background:var(--navy);color:white;border-color:var(--navy)}button:focus-visible{outline:4px solid var(--focus);outline-offset:3px}main{padding:14px 12px 28px;max-width:760px;margin:auto;min-height:45vh}.section-title{font-size:25px;font-weight:900;margin:8px 4px 14px}.match{background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:15px;margin-bottom:12px}.date{color:var(--muted);font-size:17px;font-weight:800;margin-bottom:10px}.teams{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:center}.team{font-size:clamp(20px,5.2vw,25px);font-weight:900;line-height:1.18;overflow-wrap:anywhere}.away{text-align:right}.score{min-width:82px;text-align:center;background:#eaf0f5;color:var(--navy);border-radius:12px;padding:8px 5px;font-size:clamp(25px,6vw,31px);font-weight:900;white-space:nowrap}.status{margin-top:9px;font-size:16px;font-weight:800;color:var(--muted)}.table-wrap{overflow-x:auto;background:var(--surface);border:2px solid var(--line);border-radius:15px}table{border-collapse:collapse;width:100%;min-width:480px;font-size:19px}th,td{padding:13px 9px;border-bottom:1px solid var(--line);text-align:center}th{background:#e8edf2;color:var(--navy);font-size:17px;font-weight:900}td.club{text-align:left;font-weight:900;min-width:165px}td.pos,td.points{font-weight:900}td.points{font-size:22px}.empty,.error,.notice{background:var(--surface);border:2px solid var(--line);border-radius:15px;padding:22px 17px;font-size:20px;font-weight:700;margin:12px 0}.error{border-color:#b42318;color:#7a1711}.notice{font-size:17px;color:var(--muted)}footer{max-width:760px;margin:auto;padding:0 18px 28px;color:var(--muted);font-size:15px}@media(max-width:390px){.refresh{font-size:16px;padding:6px 8px}.match{padding:12px}.score{min-width:68px}.team{font-size:19px}}
+
+/* Czytelność senior-friendly, dwa motywy */
+:root{--navy:#12324c;--navy2:#245372;--paper:#f2f5f8;--ink:#101820;--muted:#36485b;--line:#aab8c6;--surface:#fff;--subtle:#e6edf3;--tabbar:#e2eaf1;--score-bg:#e6eff7;--score-ink:#102d46;color-scheme:light}
+html[data-theme="dark"]{--navy:#101a25;--navy2:#2a455c;--paper:#101820;--ink:#f7fafc;--muted:#d4e0eb;--line:#64788a;--surface:#202d39;--subtle:#2a3a49;--tabbar:#172635;--score-bg:#354d62;--score-ink:#fff;color-scheme:dark}
+body{background:var(--paper);color:var(--ink);font-size:20px}
+header{background:var(--navy)}.head{align-items:flex-start;flex-wrap:wrap}.head-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.theme-toggle,.refresh{border:2px solid #fff;border-radius:13px;background:var(--navy2);color:#fff;min-height:56px;padding:9px 13px;font-size:19px;font-weight:900;cursor:pointer}
+.tabs{background:var(--tabbar);grid-template-columns:1.2fr .95fr .8fr}.tab{background:var(--surface);color:var(--ink);border-color:var(--line);font-size:clamp(18px,4.7vw,23px);min-height:70px}.tab.active{background:var(--navy2);color:#fff;border-color:var(--navy2)}
+.section-title{font-size:clamp(28px,6.8vw,34px)}.match,.table-wrap,.empty,.notice,.error{background:var(--surface);border-color:var(--line)}.match{padding:18px;margin-bottom:15px}.date{color:var(--muted);font-size:clamp(19px,4.8vw,23px)}.team{font-size:clamp(23px,5.8vw,30px);line-height:1.2}.score{background:var(--score-bg);color:var(--score-ink);font-size:clamp(27px,6.4vw,34px)}.status{font-size:19px;color:var(--muted)}.notice,.empty{color:var(--ink);font-size:21px}table{font-size:22px}th{background:var(--subtle);color:var(--ink);font-size:19px}th,td{border-color:var(--line);padding:15px 10px}td.points{font-size:25px}footer{color:var(--muted);font-size:18px}
+@media(max-width:390px){.head-actions{width:100%;justify-content:flex-start}.theme-toggle,.refresh{font-size:18px}.match{padding:13px}.teams{gap:5px}.team{font-size:clamp(21px,5.6vw,25px)}.score{min-width:67px;padding:8px 4px;font-size:25px}.tab{font-size:17px;padding:8px 3px}}
+
+/* Ekstraklasa 4.0: trzy duże rozmiary tekstu, niezależnie na każdym telefonie */
+:root{--font-mult:1}
+html[data-font="base"]{--font-mult:1}
+html[data-font="larger"]{--font-mult:1.17}
+html[data-font="largest"]{--font-mult:1.34}
+.font-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px;border:1px solid rgba(255,255,255,.65);border-radius:14px}
+.font-label{font-weight:800;font-size:18px;padding:0 4px}
+.font-choice{border:2px solid #fff;border-radius:10px;background:transparent;color:#fff;min-height:48px;padding:6px 9px;font-size:17px;font-weight:800;cursor:pointer}
+.font-choice[aria-pressed="true"]{background:#fff;color:#10243a}
+.section-title{font-size:calc(28px * var(--font-mult))}
+.date{font-size:calc(20px * var(--font-mult))}
+.team{font-size:calc(24px * var(--font-mult));overflow-wrap:anywhere}
+.score{font-size:calc(29px * var(--font-mult));min-width:calc(80px * var(--font-mult))}
+.status{font-size:calc(19px * var(--font-mult))}
+.tab{font-size:calc(18px * var(--font-mult));overflow-wrap:anywhere}
+.empty,.error,.notice{font-size:calc(20px * var(--font-mult))}
+table{font-size:calc(21px * var(--font-mult))}
+th{font-size:calc(18px * var(--font-mult))}
+td.points{font-size:calc(24px * var(--font-mult))}
+#season{font-size:calc(19px * var(--font-mult))}
+#updated,footer{font-size:calc(17px * var(--font-mult))}
+@media(max-width:430px){.head-actions{width:100%;justify-content:flex-start}.font-controls{width:100%}.font-choice{flex:1;min-width:0;padding:6px 3px;font-size:15px}.teams{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:4px}.match{padding:12px}.score{min-width:0;padding:8px 4px}.tab{padding:8px 2px}}
+
+/* V4.1: jedna drużyna w wierszu, wynik wyrównany do prawej. */
+.teams{display:flex!important;flex-direction:column;align-items:stretch;gap:0!important}
+.team-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px 0;min-height:64px}
+.team-row+.team-row{border-top:1px solid var(--line)}
+.team-row .team{font-size:calc(24px * var(--font-mult));line-height:1.25;text-align:left;overflow-wrap:normal;word-break:normal;hyphens:auto;min-width:0}
+.team-score{font-size:calc(30px * var(--font-mult));font-weight:900;min-width:1.3em;text-align:right;color:var(--score-ink)}
+.fixture-label{text-align:center;color:var(--muted);font-size:calc(17px * var(--font-mult));font-weight:800;padding:6px 0}
+@media(max-width:390px){.team-row .team{font-size:calc(23px * var(--font-mult))}}
+
+/* Rozwijane kolejki i etapy rozgrywek. */
+.round-block {
+  margin: 0 0 15px;
+  overflow: hidden;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: 18px;
+}
+.round-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 82px;
+  padding: 16px;
+  cursor: pointer;
+  list-style: none;
+  background: var(--subtle);
+  color: var(--ink);
+}
+.round-toggle::-webkit-details-marker { display: none; }
+.round-toggle:focus-visible { outline: 4px solid var(--focus); outline-offset: -4px; }
+.round-name { display: block; font-size: calc(24px * var(--font-mult)); font-weight: 900; line-height: 1.22; }
+.round-dates { display: block; margin-top: 4px; font-size: calc(18px * var(--font-mult)); color: var(--muted); font-weight: 700; }
+.round-right { display: flex; flex-wrap: wrap; justify-content: end; align-items: center; gap: 10px; }
+.round-chevron { font-size: 30px; font-weight: 900; line-height: 1; }
+.round-chevron::before { content: '+'; }
+.round-block[open] .round-chevron::before { content: '−'; }
+.round-panel { padding: 13px 12px 1px; }
+.match-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.match-meta .date { margin: 0; }
+@media (max-width: 430px) {
+  .round-toggle { padding: 13px; }
+  .round-panel { padding: 10px 8px 1px; }
+}
+
+/* V4.2.1: napisy zakładek w jednej linii także przy największej czcionce.
+   Oddzielny responsywny rozmiar dla menu, aby 3 przyciski zmieściły się na małym telefonie. */
+.tabs {
+  grid-template-columns: minmax(0, 1.42fr) minmax(0, .86fr) minmax(0, .72fr);
+  gap: 6px;
+  padding: 10px 10px;
+}
+.tabs .tab {
+  min-width: 0;
+  min-height: 66px;
+  padding: 8px 2px;
+  font-size: clamp(16px, 4.6vw, 21px);
+  line-height: 1.12;
+  letter-spacing: -.15px;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+@media (max-width: 350px) {
+  .tabs { gap: 4px; padding: 9px 7px; }
+  .tabs .tab { font-size: 16px; padding-inline: 1px; }
+}
+
+/* 4.2.2: nagłówek bez opisu sezonu. */
+#season { display: none; }
+
+/* 4.2.4: Wyniki jako pierwsza zakładka, więcej miejsca dla Nadchodzące. */
+.tabs { grid-template-columns: minmax(0, .86fr) minmax(0, 1.42fr) minmax(0, .72fr); }
+
+/* 4.2.5: trwające mecze są na początku zakładki Wyniki. */
+.match.live-match {
+  border: 3px solid #bc202b;
+  box-shadow: 0 0 0 1px rgba(188, 32, 43, .12);
+}
+
+.live-heading { color: #b91c1c; }
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: #b91c1c;
+  color: white;
+  font-size: calc(16px * var(--font-mult));
+  font-weight: 900;
+  letter-spacing: .2px;
+  white-space: nowrap;
+}
+.live-badge::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: white;
+}
+.live-availability, .pending-label {
+  margin-top: 10px;
+  font-size: calc(16px * var(--font-mult));
+  font-weight: 700;
+  color: var(--muted);
+}
+.match.pending-match { border-style: dashed; }
+html[data-theme="dark"] .live-heading { color: #ff8d96; }
+@media(max-width:390px) {
+  .live-badge { font-size: calc(14px * var(--font-mult)); padding: 6px 8px; }
+}
+
+/* V4.2.7: clear and accessible warning if live match provider is delayed. */
+.live-stale{margin-top:12px;padding:11px 13px;border:2px solid #b45309;border-radius:10px;background:#fff3d6;color:#6d3500;font-size:calc(16px * var(--font-mult));font-weight:800;line-height:1.35}
+html[data-theme="dark"] .live-stale{background:#513713;color:#fff1d1;border-color:#fbbf24}
+
+
+/* V4.2.9: jasny, ciemny i wysoki kontrast. */
+.theme-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  border: 1px solid rgba(255,255,255,.7);
+  border-radius: 14px;
+  padding: 6px 9px;
+  min-height: 56px;
+}
+.theme-label {font-size: 18px; font-weight: 900; color: #fff;}
+.theme-select {
+  min-height: 46px;
+  max-width: 200px;
+  padding: 7px 9px;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  background: #fff;
+  color: #111827;
+  font: 900 19px Arial, Helvetica, sans-serif;
+  cursor: pointer;
+}
+.theme-select:focus-visible {outline: 4px solid var(--focus); outline-offset: 3px;}
+@media(max-width:430px){
+  .theme-controls{flex: 1 1 190px; justify-content: space-between;}
+  .theme-select{flex: 1 1 100px; min-width: 100px;}
+}
+html[data-theme="contrast"] {
+  --navy: #000;
+  --navy2: #000;
+  --paper: #fff;
+  --ink: #000;
+  --muted: #000;
+  --line: #000;
+  --surface: #fff;
+  --subtle: #fff;
+  --tabbar: #fff;
+  --score-bg: #fff;
+  --score-ink: #000;
+  --focus: #ffcc00;
+  color-scheme: light;
+}
+html[data-theme="contrast"] .tabs {border-bottom: 3px solid #000;}
+html[data-theme="contrast"] .tabs .tab {
+  background: #fff;
+  color: #000;
+  border: 3px solid #000;
+}
+html[data-theme="contrast"] .tabs .tab.active {background: #000; color: #fff;}
+html[data-theme="contrast"] .match,
+html[data-theme="contrast"] .round-block,
+html[data-theme="contrast"] .table-wrap,
+html[data-theme="contrast"] .notice,
+html[data-theme="contrast"] .empty,
+html[data-theme="contrast"] .error {border-width: 3px;}
+html[data-theme="contrast"] .round-toggle {border-bottom: 2px solid #000;}
+html[data-theme="contrast"] .team-row + .team-row {border-top: 2px solid #000;}
+html[data-theme="contrast"] html[data-theme="contrast"] .match.live-match {border: 3px solid #aa0018;}
+html[data-theme="contrast"] html[data-theme="contrast"] .live-heading {color: #99001a;}
+html[data-theme="contrast"] .live-badge {background: #99001a; color: #fff;}
+html[data-theme="contrast"] .live-stale {background: #fff1b8; color: #000; border-color: #000;}
+html[data-theme="contrast"] .match-meta .date,
+html[data-theme="contrast"] .round-dates,
+html[data-theme="contrast"] footer,
+html[data-theme="contrast"] #updated {color:#000;}
+
+
+/* 4.2.9: wielkie litery i mocne pogrubienie najważniejszych treści.
+   Treści pomocnicze i ostrzeżenia pozostają w zwykłej pisowni,
+   by nie tworzyć długich, trudniejszych w czytaniu bloków. */
+h1, .eyebrow,
+.tabs .tab, .section-title,
+.round-name, .round-dates,
+.match-meta .date, .team-row .team,
+.live-badge, th, td.club,
+.font-label, .font-choice, .theme-label, .theme-select, .refresh {
+  text-transform: uppercase;
+  font-weight: 900;
+}
+.team-row .team {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
+  line-height: 1.22;
+  text-wrap: pretty;
+}
+/* Daj nazwom klubów możliwie dużo miejsca; wynik pozostaje z prawej. */
+.team-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+/* Trzy zakładki muszą zmieścić się w jednym wierszu także wielkimi literami. */
+.tabs {grid-template-columns:minmax(0, .86fr) minmax(0, 1.52fr) minmax(0, .74fr);gap:5px;}
+.tabs .tab {
+  font-size:clamp(15px,4.2vw,19px);
+  letter-spacing:-.35px;
+  white-space:nowrap;
+  word-break:normal;
+  overflow-wrap:normal;
+  min-width:0;
+  padding-inline:2px;
+}
+/* W tabeli zachowujemy przewijanie poziome i czytelne nazwy klubów. */
+td.club { letter-spacing:.1px; }
+@media(max-width:350px){
+  .tabs {padding-inline:6px;gap:4px;}
+  .tabs .tab {font-size:14px;letter-spacing:-.45px;padding-inline:1px;}
+}
+
+
+/* V4.2.10: krótkie etykiety i dwa zestawy 3 dużych przycisków;
+   ODŚWIEŻ zawsze w osobnym wierszu pod ustawieniami. */
+header .head {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 15px;
+}
+header .head-actions {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  max-width: 680px;
+}
+header .font-controls,
+header .theme-controls {
+  width: 100%;
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 7px;
+  min-height: 60px;
+  border: 1px solid rgba(255,255,255,.7);
+  border-radius: 14px;
+}
+header .font-label,
+header .theme-label {
+  margin: 0;
+  padding: 0 2px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+header .font-buttons,
+header .theme-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1.28fr .75fr;
+  gap: 5px;
+  min-width: 0;
+  width: 100%;
+}
+header .theme-buttons { grid-template-columns: 1fr 1.08fr .95fr; }
+header .font-choice,
+header .theme-choice {
+  min-width: 0;
+  width: 100%;
+  min-height: 47px;
+  padding: 6px 2px;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  background: transparent;
+  color: #fff;
+  font: 900 clamp(13px,3.9vw,18px)/1.1 Arial,Helvetica,sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: -.15px;
+}
+header .font-choice[aria-pressed="true"],
+header .theme-choice[aria-pressed="true"] {
+  background: #fff;
+  color: #10243a;
+}
+header .theme-choice[aria-pressed="true"] { color: #111827; }
+header .refresh {
+  display: block;
+  flex: none;
+  align-self: stretch;
+  width: 100%;
+  margin: 0;
+  min-height: 54px;
+  padding: 10px;
+  text-align: center;
+  font-size: 19px;
+  text-transform: uppercase;
+  font-weight: 900;
+}
+@media(max-width:360px) {
+  header { padding-inline: 12px; }
+  header .font-controls,
+  header .theme-controls {grid-template-columns: 51px minmax(0, 1fr); gap:5px; padding:6px;}
+  header .font-label,
+  header .theme-label {font-size:12px;padding:0 1px;}
+  header .font-buttons,
+  header .theme-buttons {gap:4px;}
+  header .font-choice,
+  header .theme-choice {font-size:13px;letter-spacing:-.3px;padding-inline:0;}
+}
+
+/* V5.0: wybór rozgrywek, zachowana duża czcionka, trzy motywy. */
+.competition-nav{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;max-width:760px;margin:0 auto;padding:12px;background:var(--paper)}
+.competition-choice{min-width:0;min-height:62px;border:2px solid var(--line);border-radius:13px;background:var(--surface);color:var(--ink);font:900 clamp(13px,3.65vw,20px)/1.1 Arial,Helvetica,sans-serif;letter-spacing:-.2px;text-transform:uppercase;white-space:nowrap;cursor:pointer;padding:10px 4px}
+.competition-choice[aria-pressed="true"]{background:var(--navy2);color:#fff;border-color:var(--navy2)}
+.competition-choice:focus-visible{outline:4px solid var(--focus);outline-offset:2px}
+body[data-competition="cup"] .tabs{grid-template-columns:minmax(0,.9fr) minmax(0,1.5fr)}
+body[data-competition="cup"] .tabs .tab[data-tab="table"]{display:none}
+html[data-theme="contrast"] .competition-choice{border:3px solid #000;background:#fff;color:#000}
+html[data-theme="contrast"] .competition-choice[aria-pressed="true"]{background:#000;color:#fff}
+@media(max-width:350px){.competition-nav{padding:8px 7px;gap:5px}.competition-choice{font-size:12px;letter-spacing:-.35px;padding-inline:2px}}
+
+/* Wynik pucharowy po dogrywce i seria rzutów karnych, dostępny we wszystkich motywach. */
+.cup-score-details {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--subtle);
+  color: var(--ink);
+  font-size: calc(18px * var(--font-mult));
+  font-weight: 900;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+html[data-theme="contrast"] .cup-score-details { border: 3px solid #000; }
+
+/* Osobny, czytelny nagłówek publicznej aplikacji. */
+header .brand h1 { font-size: clamp(30px,7.5vw,44px); line-height:1.12; }
+header .brand .eyebrow { letter-spacing: 1.1px; }

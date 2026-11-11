@@ -1,0 +1,20 @@
+{
+  "name": "Wyniki dla Seniorów",
+  "short_name": "Wyniki Seniora",
+  "description": "Wyniki i terminarze polskiej piłki nożnej w czytelnej aplikacji.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2f5f8",
+  "theme_color": "#12324c",
+  "lang": "pl",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
