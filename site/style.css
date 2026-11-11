@@ -394,3 +394,18 @@ body[data-competition="cup"] .tabs .tab[data-tab="table"]{display:none}
 html[data-theme="contrast"] .competition-choice{border:3px solid #000;background:#fff;color:#000}
 html[data-theme="contrast"] .competition-choice[aria-pressed="true"]{background:#000;color:#fff}
 @media(max-width:350px){.competition-nav{padding:8px 7px;gap:5px}.competition-choice{font-size:12px;letter-spacing:-.35px;padding-inline:2px}}
+
+/* Wynik pucharowy po dogrywce i seria rzutów karnych, dostępny we wszystkich motywach. */
+.cup-score-details {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--subtle);
+  color: var(--ink);
+  font-size: calc(18px * var(--font-mult));
+  font-weight: 900;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+html[data-theme="contrast"] .cup-score-details { border: 3px solid #000; }
