@@ -155,6 +155,49 @@ function matchMinute(m) {
   const value = String(raw).trim().replace(/'$/, '');
   return /^\d{1,3}(\+\d{1,2})?$/.test(value) ? `${value}′` : '';
 }
+
+function cupScorePair(raw) {
+  if (raw == null) return null;
+  if (typeof raw === 'object' && !Array.isArray(raw)) {
+    const h = raw.home ?? raw.home_score ?? raw.home_goals;
+    const a = raw.away ?? raw.away_score ?? raw.away_goals;
+    if (h == null || a == null) return null;
+    const home = Number(h), away = Number(a);
+    if (Number.isInteger(home) && Number.isInteger(away) && home >= 0 && away >= 0) {
+      return { home, away };
+    }
+    return null;
+  }
+  if (Array.isArray(raw) && raw.length >= 2) {
+    const home = Number(raw[0]), away = Number(raw[1]);
+    if (Number.isInteger(home) && Number.isInteger(away) && home >= 0 && away >= 0) {
+      return { home, away };
+    }
+  }
+  if (typeof raw === 'string') {
+    const match = raw.match(/^\s*(\d{1,2})\s*[-:]\s*(\d{1,2})\s*$/);
+    if (match) return { home: Number(match[1]), away: Number(match[2]) };
+  }
+  return null;
+}
+function cupMatchScore(m) {
+  const regulationHome = Number(m.home_score), regulationAway = Number(m.away_score);
+  const hasRegulation = m.home_score != null && m.away_score != null &&
+    Number.isFinite(regulationHome) && Number.isFinite(regulationAway);
+  const extra = cupScorePair(m.extra_time_score);
+  const penalties = cupScorePair(m.penalty_shootout);
+  // API Bzzoiro extra_time_score contains GOALS IN EXTRA TIME, not a cumulative score.
+  const home = hasRegulation ? regulationHome + (extra?.home || 0) : m.home_score;
+  const away = hasRegulation ? regulationAway + (extra?.away || 0) : m.away_score;
+  return {
+    home, away,
+    details: penalties ? ('KARNE: ' + penalties.home + ':' + penalties.away +
+      (extra && hasRegulation ? ' · PO 90 MIN: ' + regulationHome + ':' + regulationAway : '')) :
+      extra && hasRegulation ? ('PO DOGRYWCE · PO 90 MIN: ' + regulationHome + ':' + regulationAway) :
+      ''
+  };
+}
+
 function makeMatchCard(m, kind = 'upcoming') {
   const favorite = isGornik(m);
   const isPlaying = kind === 'live';
@@ -174,9 +217,10 @@ function makeMatchCard(m, kind = 'upcoming') {
   card.append(meta);
   const teams = el('div', 'teams');
   const showScores = kind !== 'upcoming';
+  const cupScore = competition === 'cup' && showScores ? cupMatchScore(m) : null;
   for (const [name, scoreValue] of [
-    [val(m.home, 'Gospodarze'), m.home_score],
-    [val(m.away, 'Goście'), m.away_score]
+    [val(m.home, 'Gospodarze'), cupScore ? cupScore.home : m.home_score],
+    [val(m.away, 'Goście'), cupScore ? cupScore.away : m.away_score]
   ]) {
     const row = el('div', 'team-row');
     row.append(el('div', 'team', name));
@@ -184,6 +228,7 @@ function makeMatchCard(m, kind = 'upcoming') {
     teams.append(row);
   }
   card.append(teams);
+  if (cupScore?.details) card.append(el('div', 'cup-score-details', cupScore.details));
   if (isPlaying && m.live_data_delayed) {
     card.append(el('div', 'live-stale',
       'Uwaga: źródło wyników może być opóźnione. Sprawdź godzinę aktualizacji poniżej.'));
