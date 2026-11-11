@@ -6,6 +6,10 @@ const updatedEl = document.querySelector('#updated');
 const refreshBtn = document.querySelector('#refresh');
 let data = null;
 let tab = 'results';
+let competition = 'ekstraklasa';
+const competitionButtons = [...document.querySelectorAll('.competition-choice')];
+const pageTitle = document.querySelector('h1');
+const tableTab = document.querySelector('.tab[data-tab="table"]');
 
 const el = (tag, cls, txt) => {
   const x = document.createElement(tag);
@@ -287,21 +291,135 @@ function table(rows) {
   content.append(el('p', 'notice', 'Przesuń tabelę w bok, aby zobaczyć wszystkie kolumny.'));
 }
 
-function render() {
-  if (!data?.ok) {
-    content.replaceChildren(el('p', 'empty',
-      'Brak danych. Administrator musi uruchomić aktualizację w GitHub Actions.'));
+
+const CUP_STAGES = {
+  'preliminary': 'RUNDA WSTĘPNA', 'preliminary-round': 'RUNDA WSTĘPNA',
+  'round-of-64': '1/32 FINAŁU', 'round-of-32': '1/16 FINAŁU',
+  'round-of-16': '1/8 FINAŁU', 'quarterfinal': 'ĆWIERĆFINAŁ',
+  'quarterfinals': 'ĆWIERĆFINAŁ', 'semifinal': 'PÓŁFINAŁ',
+  'semifinals': 'PÓŁFINAŁ', 'final': 'FINAŁ'
+};
+function cupRoundInfo(m) {
+  const stage = String(m.stage || '').toLowerCase().trim();
+  const raw = String(m.round_label || m.stage_name || m.round_name || '').trim();
+  let label = CUP_STAGES[stage];
+  if (!label) {
+    const numberMatch = raw.match(/^round\s*(\d+)$/i);
+    if (numberMatch) label = numberMatch[1] + '. RUNDA';
+    else if (/preliminary/i.test(raw)) label = 'RUNDA WSTĘPNA';
+    else if (/quarter.?final/i.test(raw)) label = 'ĆWIERĆFINAŁ';
+    else if (/semi.?final/i.test(raw)) label = 'PÓŁFINAŁ';
+    else if (/^final$/i.test(raw)) label = 'FINAŁ';
+    else label = raw || 'POZOSTAŁE TERMINY';
+  }
+  const key = stage || label;
+  return {key, label};
+}
+function cupGroups(matches) {
+  const groups = new Map();
+  for (const m of matches) {
+    const info = cupRoundInfo(m);
+    if (!groups.has(info.key)) groups.set(info.key, {...info,matches:[]});
+    groups.get(info.key).matches.push(m);
+  }
+  return [...groups.values()];
+}
+function appendCupGroups(matches, kind) {
+  cupGroups(matches).forEach((group, index) => {
+    const details = el('details', 'round-block');
+    if (index === 0) details.open = true;
+    const summary = el('summary', 'round-toggle');
+    const title = el('div', 'round-title');
+    title.append(el('span', 'round-name', group.label));
+    title.append(el('span', 'round-dates', roundDates(group.matches)));
+    const right = el('div', 'round-right');
+    right.append(el('span', 'round-chevron', ''));
+    summary.append(title, right);
+    details.append(summary);
+    const panel = el('div', 'round-panel');
+    for (const m of group.matches) panel.append(makeMatchCard(m, kind));
+    details.append(panel);
+    content.append(details);
+  });
+}
+function cupUpcoming(list) {
+  content.replaceChildren(el('h2', 'section-title', 'Nadchodzące mecze Pucharu Polski'));
+  const matches = (Array.isArray(list) ? list : [])
+    .filter(m => !isLive(m) && !isAfterKickoffUnconfirmed(m))
+    .sort((a,b) => (kickoffMillis(a) ?? Infinity) - (kickoffMillis(b) ?? Infinity));
+  if (!matches.length) {
+    content.append(el('p','empty','Brak zaplanowanych meczów. Kolejna runda może nie mieć jeszcze terminarza.'));
     return;
   }
-  // Celowo nie wyświetlamy nazwy sezonu pod przyciskami nagłówka.
+  appendCupGroups(matches, 'upcoming');
+}
+function cupResults(list, liveFromApi, pendingFromApi, upcomingList) {
+  content.replaceChildren();
+  const upcomingSource = Array.isArray(upcomingList) ? upcomingList : [];
+  const live = uniqueMatches([
+    ...(Array.isArray(liveFromApi) ? liveFromApi : []),
+    ...upcomingSource.filter(isLive)
+  ]);
+  const pending = uniqueMatches([
+    ...(Array.isArray(pendingFromApi) ? pendingFromApi : []),
+    ...upcomingSource.filter(isAfterKickoffUnconfirmed)
+  ]).filter(m => !isLive(m));
+  const finished = (Array.isArray(list) ? list : []).filter(m => !isLive(m)).slice(0,60);
+  if (!live.length && !pending.length && !finished.length) {
+    content.append(el('p','empty','Brak wyników Pucharu Polski.'));
+    return;
+  }
+  if (live.length) {
+    content.append(el('h2','section-title live-heading','Mecze na żywo'));
+    for (const m of live) content.append(makeMatchCard(m,'live'));
+  }
+  if (pending.length) {
+    content.append(el('h2','section-title','Oczekiwanie na wynik'));
+    for (const m of pending) content.append(makeMatchCard(m,'pending'));
+  }
+  if (finished.length) {
+    content.append(el('h2','section-title','Ostatnie wyniki Pucharu Polski'));
+    appendCupGroups(finished,'finished');
+  }
+}
+
+function render() {
+  const isCup = competition === 'cup';
+  document.body.dataset.competition = competition;
+  if (pageTitle) pageTitle.textContent = isCup ? 'PUCHAR POLSKI' : 'EKSTRAKLASA';
+  if (tableTab) tableTab.hidden = isCup;
+  if (isCup && tab === 'table') tab = 'results';
+  competitionButtons.forEach(b => b.setAttribute('aria-pressed',
+    String(b.dataset.competition === competition)));
+  document.querySelectorAll('.tab').forEach(b => {
+    const active = b.dataset.tab === tab;
+    b.classList.toggle('active',active);
+    b.setAttribute('aria-selected',String(active));
+  });
+  if (!data?.ok) {
+    content.replaceChildren(el('p','empty','Brak danych. Administrator musi uruchomić aktualizację w GitHub Actions.'));
+    return;
+  }
   if (data.updated_at) {
     const mins = (Date.now() - Date.parse(data.updated_at)) / 60000;
-    const stale = Number.isFinite(mins) && mins > 25;
-    updatedEl.textContent = `${stale ? '⚠ Dane strony mogą być nieaktualne. ' : ''}Ostatnia aktualizacja: ${dateText(data.updated_at)} · Źródło: Bzzoiro Sports Data`;
+    const stale = Number.isFinite(mins) && mins > 40;
+    updatedEl.textContent = (stale ? '⚠ Dane strony mogą być nieaktualne. ' : '') +
+      'Ostatnia aktualizacja: ' + dateText(data.updated_at) + ' · Źródło: Bzzoiro Sports Data';
   }
-  if (tab === 'upcoming') upcoming(data.upcoming);
-  if (tab === 'results') results(data.results, data.live, data.pending, data.upcoming);
-  if (tab === 'table') table(data.standings);
+  const current = isCup ? data.competitions?.cup : data;
+  if (!current?.ok) {
+    content.replaceChildren(el('p','notice',
+      current?.error || 'Puchar Polski: dane pojawią się po pierwszej aktualizacji projektu.'));
+    return;
+  }
+  if (isCup) {
+    if (tab === 'upcoming') cupUpcoming(current.upcoming);
+    else cupResults(current.results,current.live,current.pending,current.upcoming);
+    return;
+  }
+  if (tab === 'upcoming') upcoming(current.upcoming);
+  if (tab === 'results') results(current.results,current.live,current.pending,current.upcoming);
+  if (tab === 'table') table(current.standings);
 }
 
 async function load(force = false) {
@@ -342,6 +460,12 @@ document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () =>
     x.setAttribute('aria-selected', x === b ? 'true' : 'false');
   });
   render();
+}));
+competitionButtons.forEach(button => button.addEventListener('click', () => {
+  competition = button.dataset.competition === 'cup' ? 'cup' : 'ekstraklasa';
+  tab = 'results';
+  render();
+  window.scrollTo(0,0);
 }));
 refreshBtn.addEventListener('click', () => load(true));
 // Powrót do aplikacji z innej karty nie może zostawiać starego wyniku.
