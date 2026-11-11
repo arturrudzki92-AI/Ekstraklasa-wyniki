@@ -161,6 +161,12 @@ def normalize_event(e):
         'home_score': score(e, 'home'),
         'away_score': score(e, 'away'),
         'round': event_round_number(e),
+        'round_label': first(e, 'round_label'),
+        'round_name': first(e, 'round_name'),
+        'stage': first(e, 'stage'),
+        'stage_name': first(e, 'stage_name'),
+        'extra_time_score': first(e, 'extra_time_score'),
+        'penalty_shootout': first(e, 'penalty_shootout'),
         'minute': first(e, 'current_minute', 'minute') if first(e, 'current_minute', 'minute') is not None else (e.get('time') or {}).get('minute') if isinstance(e.get('time'), dict) else None,
         'period': first(e, 'period', 'match_period') if first(e, 'period', 'match_period') is not None else (e.get('time') or {}).get('period') if isinstance(e.get('time'), dict) else None,
         'provider_updated_at': first(e, 'last_updated_at', 'last_update_at', 'updated_at', 'last_update')
@@ -347,6 +353,55 @@ def next_five_rounds(matches):
     return upcoming[:45]
 
 
+
+def build_polish_cup():
+    """Puchar Polski: oddzielne dane; ewentualny błąd nie blokuje Ekstraklasy."""
+    lid = 46  # Bzzoiro Sports Data /leagues/46/
+    try:
+        season = get(f'/leagues/{lid}/season/')
+    except requests.RequestException:
+        season = {}
+    if not isinstance(season, dict) or not season.get('id'):
+        seasons = rows(get(f'/leagues/{lid}/seasons/'))
+        if not seasons:
+            raise RuntimeError('API nie zwróciło sezonów Pucharu Polski.')
+        def priority(item):
+            year = re.search(r'20\d{2}', str(first(item, 'year', 'name') or ''))
+            return (bool(first(item, 'is_current', 'current')),
+                    int(year.group(0)) if year else 0,
+                    int(item.get('id') or 0))
+        seasons.sort(key=priority, reverse=True)
+        season = seasons[0]
+    sid = season.get('id')
+    if sid is None:
+        raise RuntimeError('Brak ID sezonu Pucharu Polski.')
+    events = paged('/events/', {'league_id': lid, 'season_id': sid})
+    matches = [normalize_event(e) for e in events if isinstance(e, dict)]
+    enrich_with_live_feed(matches, lid, sid)
+    matches.sort(key=lambda m: str(m.get('date') or ''))
+    now = datetime.now(timezone.utc)
+    upcoming = []
+    for m in matches:
+        status = str(m.get('status') or '').lower().strip()
+        if status in LIVE_STATUSES | FINISHED_STATUSES | STOPPED_STATUSES:
+            continue
+        dt = match_datetime(m.get('date'))
+        if dt is not None and dt > now:
+            upcoming.append(m)
+    result = {
+        'ok': True,
+        'league': 'Puchar Polski',
+        'season': first(season, 'name', 'year') or 'Aktualny sezon',
+        'upcoming': upcoming,
+        'live': [m for m in matches if is_live_match(m)],
+        'pending': [m for m in matches if needs_status_confirmation(m, now)],
+        'results': [m for m in matches if is_finished_match(m)][::-1]
+    }
+    print(f"PUCHAR POLSKI: sezon={result['season']}, meczow={len(matches)}, "
+          f"nadchodzacych={len(upcoming)}, live={len(result['live'])}")
+    return result
+
+
 def main():
     if not KEY:
         raise RuntimeError('Brak sekretu BSD_API_KEY w ustawieniach GitHub Actions.')
@@ -430,6 +485,16 @@ def main():
         'results': [m for m in matches if is_finished_match(m)][::-1],
         'standings': table
     }
+    # Nie dopuszczaj do utraty danych Ekstraklasy, jeżeli API Pucharu zawiedzie.
+    try:
+        data['competitions'] = {'cup': build_polish_cup()}
+    except (requests.RequestException, RuntimeError, ValueError, TypeError) as error:
+        print('OSTRZEZENIE: Puchar Polski:', type(error).__name__, str(error)[:120])
+        data['competitions'] = {'cup': {
+            'ok': False,
+            'error': 'Dane Pucharu Polski są obecnie niedostępne. Spróbuj ponownie później.'
+        }}
+
     OUT.parent.mkdir(exist_ok=True)
     OUT.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
     print(f"OK: {data['league']} / {data['season']}; meczów {len(matches)}, na żywo {len(data['live'])}, nadchodzących {len(data['upcoming'])}, tabela {len(table)}")
