@@ -313,7 +313,7 @@ function table(rows) {
   const wrap = el('div', 'table-wrap');
   const t = document.createElement('table');
   const h = document.createElement('tr');
-  ['M.', 'Drużyna', 'M', 'W', 'R', 'P', 'Bramki', 'Pkt']
+  ['M.', 'Drużyna', 'M', 'Pkt', 'W', 'R', 'P', 'Bramki']
     .forEach(x => h.append(el('th', '', x)));
   const thead = document.createElement('thead');
   thead.append(h);
@@ -323,10 +323,9 @@ function table(rows) {
     const tr = document.createElement('tr');
     [
       [val(r.position, i + 1), 'pos'], [val(r.team, 'Nieznana drużyna'), 'club'],
-      [val(r.played), ''], [val(r.won), ''], [val(r.drawn), ''],
-      [val(r.lost), ''],
-      [r.gf != null ? `${r.gf}:${val(r.ga)}` : '—', ''],
-      [val(r.points), 'points']
+      [val(r.played), ''], [val(r.points), 'points'],
+      [val(r.won), ''], [val(r.drawn), ''], [val(r.lost), ''],
+      [r.gf != null ? `${r.gf}:${val(r.ga)}` : '—', '']
     ].forEach(([v, c]) => tr.append(el('td', c, v)));
     body.append(tr);
   });
