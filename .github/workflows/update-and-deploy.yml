@@ -15,11 +15,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  update-and-deploy:
+  build:
+    name: Pobierz i przygotuj dane
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Pobierz repozytorium
         uses: actions/checkout@v4
@@ -45,6 +43,14 @@ jobs:
         with:
           path: site
 
+  deploy:
+    name: Opublikuj zaktualizowaną aplikację
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Opublikuj aplikacje
         id: deployment
         uses: actions/deploy-pages@v4
