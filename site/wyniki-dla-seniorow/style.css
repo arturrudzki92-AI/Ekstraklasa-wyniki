@@ -389,3 +389,99 @@ html[data-theme="contrast"] .cup-score-details { border: 3px solid #000; }
 /* Osobny, czytelny nagłówek publicznej aplikacji. */
 header .brand h1 { font-size: clamp(30px,7.5vw,44px); line-height:1.12; }
 header .brand .eyebrow { letter-spacing: 1.1px; }
+
+/* Responsywność 5.0: ekran telefonu bez zmian, tablet i laptop z własnym układem.
+   Zapobiegamy przepełnieniu, zachowując duże przyciski i czytelny tekst. */
+html, body { min-width: 0; }
+header .brand, header .head, header .head-actions,
+.competition-nav, .tabs, #content { min-width: 0; }
+.match, .round-block, .round-panel, .team-row, .team-row .team {
+  min-width: 0;
+}
+.team-row .team {
+  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+.round-toggle > *, .round-title { min-width: 0; }
+.round-name, .round-dates { overflow-wrap: anywhere; }
+.table-wrap { max-width: 100%; }
+
+/* Tablet: szeroki, wyśrodkowany układ wciąż w jednej kolumnie. */
+@media (min-width: 700px) and (max-width: 959px) {
+  header .head { max-width: 840px; margin-inline: auto; }
+  header .head-actions { max-width: 840px; }
+  .competition-nav, .tabs, main, footer { max-width: 880px; margin-inline: auto; }
+  main { padding-inline: 22px; }
+}
+
+/* Laptop i duży monitor: sterowanie w nagłówku obok tytułu,
+   spotkania w dwóch czytelnych kolumnach, tabela na pełną szerokość. */
+@media (min-width: 960px) {
+  header { padding: 26px 24px 24px; }
+  header .head {
+    display: grid;
+    grid-template-columns: minmax(235px, .8fr) minmax(0, 1.8fr);
+    align-items: center;
+    gap: 28px;
+    max-width: 1160px;
+    margin-inline: auto;
+  }
+  header .brand h1 {
+    font-size: clamp(33px, 3.4vw, 48px);
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+  header .head-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+    max-width: none;
+  }
+  header .font-controls, header .theme-controls {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: 7px;
+    width: 100%;
+    min-width: 0;
+    padding: 10px;
+  }
+  header .font-label, header .theme-label { font-size: 15px; }
+  header .font-choice, header .theme-choice {
+    font-size: clamp(13px, 1.18vw, 16px);
+    min-height: 48px;
+  }
+  header .refresh {
+    grid-column: 1 / -1;
+    min-height: 52px;
+  }
+  .competition-nav, .tabs, main, footer {
+    max-width: 1160px;
+    margin-inline: auto;
+  }
+  .competition-nav { padding: 15px 20px 10px; gap: 14px; }
+  .tabs { padding: 10px 20px 12px; gap: 12px; }
+  .tabs .tab { min-height: 58px; font-size: 19px; }
+  main { padding: 20px 20px 35px; min-width: 0; }
+  #content {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 18px;
+    align-items: start;
+  }
+  #content > :not(.match) { grid-column: 1 / -1; }
+  #content > .match { margin-bottom: 14px; }
+  .round-panel {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    padding: 15px;
+  }
+  .round-panel .match { margin: 0; }
+  .round-block { width: 100%; }
+  .table-wrap { width: 100%; }
+  table { min-width: 0; width: 100%; }
+  th, td { padding: 14px 8px; }
+  footer { padding: 0 20px 30px; }
+}
