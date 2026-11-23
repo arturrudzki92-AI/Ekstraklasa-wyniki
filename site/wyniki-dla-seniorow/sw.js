@@ -1,6 +1,6 @@
 /* Wyniki dla Seniorów, niezależny service worker w podfolderze aplikacji. */
-const CACHE = 'wyniki-dla-seniorow-v1-0-1';
-const ASSETS = ['./', './index.html', './app.js?v=1.0.1', './style.css?v=1.0.1', './manifest.webmanifest', './icon.svg'];
+const CACHE = 'wyniki-dla-seniorow-v1-0-2';
+const ASSETS = ['./', './index.html', './app.js?v=1.0.2', './style.css?v=1.0.2', './manifest.webmanifest', './icon.svg'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
   self.skipWaiting();
